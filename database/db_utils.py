@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database.models import Base, User, Question, JournalEntry, WeeklySummary, MonthlySummary
-from modules.config_manager import SALT
 
 import bcrypt
 

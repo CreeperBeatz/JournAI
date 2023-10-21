@@ -31,12 +31,12 @@ The Daily Journal App allows you to maintain a daily journal by answering a set 
 
 1. **Clone the repository**
     ```bash
-    git clone https://github.com/yourusername/daily-journal-app.git
+    git clone https://github.com/CreeperBeatz/JournAI.git
     ```
 
 2. **Navigate to the project directory**
     ```bash
-    cd daily-journal-app
+    cd JournAI
     ```
 
 3. **Activate a Python Virtual Environment**

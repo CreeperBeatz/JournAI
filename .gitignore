@@ -1,4 +1,4 @@
 # created by virtualenv automatically
 .idea
 installvenv
-
+config.cfg

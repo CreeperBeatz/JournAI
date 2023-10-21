@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database.models import Base, User, Question, JournalEntry, WeeklySummary, MonthlySummary
+from modules.config_manager import SALT
 
 import bcrypt
 
@@ -16,7 +17,7 @@ def init_db():
 
 # User related operations
 def add_user(username, password):
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), SALT)
     user = User(username=username, password=hashed_password)
     session.add(user)
     session.commit()

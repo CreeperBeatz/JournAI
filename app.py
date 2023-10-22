@@ -1,11 +1,10 @@
 import streamlit as st
-from st_pages import Page, Section, show_pages
+from st_pages import Page, show_pages
 from database.db_utils import DBManager
 from modules.config_manager import PAGE_CONFIG
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
-
 
 # Setup site structure
 show_pages([

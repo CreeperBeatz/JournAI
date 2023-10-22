@@ -30,6 +30,12 @@ class DBManager:
             return bcrypt.checkpw(password.encode('utf-8'), user.password)
         return False
 
+    def get_user_id(self, username):
+        user = self.session.query(User).filter_by(username=username).first()
+        if user:
+            return user.id
+        return -1
+
     # Journal Entry related operations
     def save_journal_entry(self, user_id, question_id, answer):
         entry = JournalEntry(user_id=user_id, question_id=question_id, answer=answer)
@@ -62,7 +68,7 @@ class DBManager:
 
     def get_questions(self, user_id):
         questions = self.session.query(Question).filter_by(user_id=user_id).all()
-        return [q.question_text for q in questions]
+        return questions
 
     def delete_questions(self, questions: List[Question]):
         pass

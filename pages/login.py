@@ -22,6 +22,7 @@ if choice == "Login":
         if login_result:
             st.success("Logged In as {}".format(username))
             st.session_state['current_user'] = username
+            st.session_state['user_id'] = db_manager.get_user_id(username)
             # Setup pages for successful login
             setup_pages_with_login()
         else:

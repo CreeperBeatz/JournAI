@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 
 from database.db_utils import DBManager
 from modules.config_manager import PAGE_CONFIG
+from modules.streamlit_helper import setup_pages_with_login
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
@@ -21,6 +22,8 @@ if choice == "Login":
         if login_result:
             st.success("Logged In as {}".format(username))
             st.session_state['current_user'] = username
+            # Setup pages for successful login
+            setup_pages_with_login()
         else:
             st.warning("Incorrect Username/Password")
 

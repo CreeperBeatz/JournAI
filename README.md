@@ -1,5 +1,8 @@
 # Daily Journal App
 
+![DALL·E 2023-10-22 09 46 59 - Vector design of a cyan geometric feather placed centrally on a white backdrop  The word 'JournAI' is displayed above the feather in a clean, minimali](https://github.com/CreeperBeatz/JournAI/assets/9784161/dc782b29-124b-4cd0-ae80-644339c90a03)
+
+
 ## Introduction
 
 The Daily Journal App allows you to maintain a daily journal by answering a set of customizable questions. At the end of each week, the answers are processed by GPT-3 to provide you with a summarized insight into your week.

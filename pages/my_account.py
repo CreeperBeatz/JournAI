@@ -37,13 +37,13 @@ if "current_user" in st.session_state.keys():
 
     # region Add New Questions
     st.subheader("Add New Questions")
-    col1, col2 = st.columns([4, 1])
-    col2.empty()
-    question_text = col1.text_input("Question Text")
-    if col2.button("⬇️") and question_text:
+    question_text = st.text_input("Question Text")
+    if st.button("Add Question") and question_text:
         db_manager.add_question_to_user(user_id, question_text)
         question = Question(user_id=user_id, question_text=question_text)
-        st.session_state[QUESTIONS_KEY].append(question)
+        del st.session_state[QUESTIONS_KEY]  # Delete so ID is loaded on next run
+        st.rerun()
+
     # endregion
 
     # region Visualize Active Questions and Trash

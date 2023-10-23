@@ -71,7 +71,9 @@ class DBManager:
         return questions
 
     def delete_questions(self, questions: List[Question]):
-        pass
+        for question in questions:
+            self.session.delete(question)
+        self.session.commit()
 
     def get_dummy_questions(self, user_id):
         q1 = Question()

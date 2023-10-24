@@ -75,24 +75,11 @@ class DBManager:
             self.session.delete(question)
         self.session.commit()
 
-    def get_dummy_questions(self, user_id):
-        q1 = Question()
-        q1.id = 1
-        q1.question_text = "Do you still love me?"
-        q1.user_id = user_id
-
-        q2 = Question()
-        q2.id = 2
-        q2.question_text = "How are you?"
-        q2.user_id = user_id
-
-        return [q1, q2]
-
     # History related operations
     def get_weekly_summaries(self, user_id):
         summaries = self.session.query(WeeklySummary).filter_by(user_id=user_id).all()
         return [s.summary for s in summaries]
 
     def get_monthly_summaries(self, user_id):
-        summaries = session.query(MonthlySummary).filter_by(user_id=user_id).all()
+        summaries = self.session.query(MonthlySummary).filter_by(user_id=user_id).all()
         return [s.summary for s in summaries]

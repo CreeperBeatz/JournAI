@@ -60,19 +60,19 @@ class DBManager:
         self.session.add(question)
         self.session.commit()
 
+    def get_questions_for_user(self, user_id):
+        questions = self.session.query(Question).filter_by(user_id=user_id, is_deleted=False).all()
+        return questions
+
     def delete_question(self, user_id, question_id):
         question = self.session.query(Question).filter_by(user_id=user_id, id=question_id).first()
         if question:
-            self.session.delete(question)
+            question.is_deleted = True
             self.session.commit()
-
-    def get_questions(self, user_id):
-        questions = self.session.query(Question).filter_by(user_id=user_id).all()
-        return questions
 
     def delete_questions(self, questions: List[Question]):
         for question in questions:
-            self.session.delete(question)
+            self.delete_question(question.user_id, question.id)
         self.session.commit()
 
     # History related operations

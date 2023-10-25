@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, BLOB
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, BLOB, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -27,6 +27,7 @@ class Question(Base):
     id = Column(Integer, primary_key=True)
     question_text = Column(String(255), nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    is_deleted = Column(Boolean, default=False)
 
     # Relationship to User
     user = relationship('User', back_populates='questions')

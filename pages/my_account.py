@@ -32,7 +32,7 @@ st.markdown("---\n\n## Questions")
 
 # Initialize questions in session state if not present
 if QUESTIONS_KEY not in st.session_state.keys():
-    questions = db_manager.get_questions(user_id)  # Consider adding error handling
+    questions = db_manager.get_questions_for_user(user_id)  # Consider adding error handling
     st.session_state[QUESTIONS_KEY] = questions
 
 if TRASH_QUESTIONS_KEY not in st.session_state.keys():

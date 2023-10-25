@@ -41,10 +41,7 @@ class DBManager:
     # endregion
 
     # region Journal Entry related operations
-    def get_journal_entry(self, user_id, question_id, entry_date: Optional[date] = None):
-        if entry_date is None:
-            entry_date = date.today()
-
+    def get_journal_entry(self, user_id, question_id, entry_date: date = date.today()):
         entry = self.session.query(JournalEntry).filter(
             and_(
                 JournalEntry.user_id == user_id,
@@ -52,7 +49,6 @@ class DBManager:
                 JournalEntry.date == entry_date
             )
         ).first()
-
         return entry
 
     def save_journal_entry(self, user_id, question_id, answer, entry_date: date = date.today()):

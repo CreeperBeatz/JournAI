@@ -1,10 +1,12 @@
-from typing import List
+from datetime import date
+from typing import List, Optional
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from database.models import Base, User, Question, JournalEntry, WeeklySummary, MonthlySummary
 
 import bcrypt
+
 
 class DBManager:
 
@@ -17,7 +19,7 @@ class DBManager:
 
         self.salt = bcrypt.gensalt()
 
-    # User related operations
+    # region User related operations
     def add_user(self, username, password):
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), self.salt)
         user = User(username=username, password=hashed_password)
@@ -36,10 +38,37 @@ class DBManager:
             return user.id
         return -1
 
-    # Journal Entry related operations
-    def save_journal_entry(self, user_id, question_id, answer):
-        entry = JournalEntry(user_id=user_id, question_id=question_id, answer=answer)
-        self.session.add(entry)
+    # endregion
+
+    # region Journal Entry related operations
+    def get_journal_entry(self, user_id, question_id, entry_date: Optional[date] = None):
+        if entry_date is None:
+            entry_date = date.today()
+
+        entry = self.session.query(JournalEntry).filter(
+            and_(
+                JournalEntry.user_id == user_id,
+                JournalEntry.question_id == question_id,
+                JournalEntry.date == entry_date
+            )
+        ).first()
+
+        return entry
+
+    def save_journal_entry(self, user_id, question_id, answer, entry_date: date = date.today()):
+        existing_entry = self.get_journal_entry(user_id, question_id, entry_date)
+
+        if existing_entry:
+            existing_entry.answer = answer
+        else:
+            new_entry = JournalEntry(
+                user_id=user_id,
+                question_id=question_id,
+                answer=answer,
+                date=entry_date
+            )
+            self.session.add(new_entry)
+
         self.session.commit()
 
     # Weekly Summary related operations

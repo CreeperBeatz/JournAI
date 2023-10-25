@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, BLOB, Boolean
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, BLOB, Boolean, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from datetime import date
 # Consider using bcrypt or Argon2 for hashing
 
 Base = declarative_base()
@@ -40,7 +41,7 @@ class JournalEntry(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     question_id = Column(Integer, ForeignKey('questions.id'), nullable=False)
     answer = Column(Text)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    date = Column(Date, nullable=False, default=date.today())
 
     # Relationships
     user = relationship('User', back_populates='journal_entries')

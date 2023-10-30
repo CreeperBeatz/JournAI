@@ -23,11 +23,7 @@ st.markdown("# Personal Details")
 
 st.text("TODO")
 
-
-st.markdown("---\n\n## Account setup\n")
-openAI_key = st.text_input("OpenAI API Key", type='password')
-if st.button('Save'):
-    st.text("TODO Saving")
+st.markdown("---\n\n# Account setup\n")
 st.markdown("---\n\n## Questions")
 
 # Initialize questions in session state if not present
@@ -41,17 +37,20 @@ if TRASH_QUESTIONS_KEY not in st.session_state.keys():
 # Add New Questions
 st.subheader("Add New Questions")
 question_text = st.text_input("Question Text")
+question_hint = st.text_input("Question Hint")
 if st.button("Add Question") and question_text:
-    db_manager.add_question_to_user(user_id, question_text)  # Consider adding error handling
+    db_manager.add_question_to_user(user_id, question_text, question_hint)  # Consider adding error handling
     del st.session_state[QUESTIONS_KEY]  # Trigger reload of IDs
     st.rerun()
 
 # Visualize Active Questions and Trash
 st.subheader("Active Questions")
+st.divider()
 for q in st.session_state[QUESTIONS_KEY]:
-    col1, col2 = st.columns([4, 1])
-    col1.write(q.question_text)
-    if col2.button('🗑️', key=f"trash_{q.id}"):
+    col1, col2 = st.columns([6, 1])
+    col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")
+    st.divider()
+    if col2.button('‎\n\n🗑️\n\n‎', key=f"trash_{q.id}", use_container_width=True):
         # TODO: Consider updating this status in the database
         st.session_state[TRASH_QUESTIONS_KEY].append(q)
         st.session_state[QUESTIONS_KEY].remove(q)
@@ -59,9 +58,9 @@ for q in st.session_state[QUESTIONS_KEY]:
 
 st.subheader('Trash')
 for q in st.session_state[TRASH_QUESTIONS_KEY]:
-    col1, col2 = st.columns([4, 1])
-    col1.write(q.question_text)
-    if col2.button('⬆️', key=f"untrash_{q.id}"):
+    col1, col2 = st.columns([6, 1])
+    col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")
+    if col2.button('‎\n\n⬆️\n\n‎', key=f"untrash_{q.id}", use_container_width=True):
         st.session_state[QUESTIONS_KEY].append(q)
         st.session_state[TRASH_QUESTIONS_KEY].remove(q)
         st.rerun()

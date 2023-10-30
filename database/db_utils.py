@@ -80,8 +80,8 @@ class DBManager:
         self.session.commit()
 
     # Question related operations
-    def add_question_to_user(self, user_id, question_text):
-        question = Question(user_id=user_id, question_text=question_text)
+    def add_question_to_user(self, user_id, question_text, question_hint=None):
+        question = Question(user_id=user_id, question_text=question_text, question_hint=question_hint)
         self.session.add(question)
         self.session.commit()
 

@@ -39,7 +39,7 @@ with st.form(key='daily_questions_form'):
             initial_answer = ""
 
         # Allow for multiline text
-        answer = st.text_area(f"Answer for {question.question_text}", initial_answer)
+        answer = st.text_area(question.question_hint, initial_answer)
 
         # Store the new answer for each question
         st.session_state[f"{question.id}_new_answer"] = answer

@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 from database.db_utils import DBManager
@@ -44,20 +45,18 @@ with st.form(key='daily_questions_form'):
         # Store the new answer for each question
         st.session_state[f"{question.id}_new_answer"] = answer
 
-    if not st.form_submit_button("Submit Answers"):
-        st.stop()
+    if st.form_submit_button("Submit Answers"):
+        for question in daily_questions:
+            if question.is_deleted:
+                continue
 
-    for question in daily_questions:
-        if question.is_deleted:
-            continue
+            new_answer = st.session_state.get(f"{question.id}_new_answer", None)
 
-        new_answer = st.session_state.get(f"{question.id}_new_answer", None)
+            if new_answer is None:
+                continue
 
-        if new_answer is None:
-            continue
+            db_manager.save_journal_entry(user_id, question.id, new_answer)
+            any_saved = True  # Set the flag to true if any answer is saved or updated
 
-        db_manager.save_journal_entry(user_id, question.id, new_answer)
-        any_saved = True  # Set the flag to true if any answer is saved or updated
-
-    if any_saved:
-        st.success("Your answers have been successfully saved.")
+        if any_saved:
+            st.success("Your answers have been successfully saved.")

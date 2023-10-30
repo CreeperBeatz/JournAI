@@ -36,7 +36,7 @@ def setup_pages_with_login():
         Page("app.py", "Home", "🎃"),
         Page("pages/my_account.py", "My Account", "🦱"),
         Page("pages/daily_entry.py", "Daily Entry", "✒️"),
-        Page("pages/weekly_summary.py", "Weekly Summary", "📃"),
-        Page("pages/monthly_summary.py", "Monthly Summary", "📰"),
-        Page("pages/yearly_summary.py", "Yearly Summary", "📖"),
+        Page("pages/weekly_summary.py", "Week Review", "📃"),
+        Page("pages/monthly_summary.py", "Month Review", "📰"),
+        Page("pages/yearly_summary.py", "Year Review", "📖"),
     ])

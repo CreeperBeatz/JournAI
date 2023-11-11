@@ -1,27 +1,4 @@
 from st_pages import Page, show_pages
-import streamlit as st
-import streamlit.components.v1 as components
-import json
-
-
-def generate_question_line(key_dict, icon, button_key):
-    key_dict[button_key] = icon
-    icon_config = f"""
-            <script>
-                var elements = window.parent.document.getElementsByClassName('css-x78sv8 eqr7zpz4');
-                let dict = {json.dumps(key_dict)};
-                let keys = Object.keys(dict);
-                let icons = Object.values(dict);
-                for (var i = 0; i < elements.length; ++i) {{
-                    for (var j = 0; j < keys.length; ++j){{
-                        if (elements[i].innerText == keys[j])
-                        elements[i].innerHTML = icons[j];
-                    }}
-                }}
-            </script>
-            """
-    components.html(f"{icon_config}", height=0, width=0)
-    return {'label': button_key, 'key': button_key}
 
 
 def setup_pages_no_login():

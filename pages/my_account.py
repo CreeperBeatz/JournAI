@@ -1,7 +1,7 @@
 import streamlit as st
 from database.db_utils import DBManager
 from database.models import Question
-from modules.streamlit_helper import setup_pages_no_login, generate_question_line
+from modules.streamlit_helper import setup_pages_no_login
 from modules.config_manager import PAGE_CONFIG
 
 # Initialize Streamlit
@@ -80,6 +80,10 @@ if st.session_state.get(DELETE_CONFIRM_KEY):
         st.rerun()
 
 st.markdown("---")
+
+# Locked Functionality questions
+# Emotions
+
 if st.button("Logout", type="primary"):
     for key, _ in st.session_state.items():
         del st.session_state[key]

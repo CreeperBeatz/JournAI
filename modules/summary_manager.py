@@ -1,4 +1,4 @@
-import openai  # Assuming you're using the OpenAI Python package
+import openai
 from modules.config_manager import OPENAI_API_KEY
 
 

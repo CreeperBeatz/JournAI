@@ -20,12 +20,10 @@ if "current_user" not in st.session_state.keys():
 
 user_id = st.session_state['user_id']
 st.markdown("# Personal Details")
-
 st.text("TODO")
 
 st.markdown("---\n\n# Account setup\n")
 st.markdown("---\n\n## Questions")
-
 # Initialize questions in session state if not present
 if QUESTIONS_KEY not in st.session_state.keys():
     questions = db_manager.get_questions_for_user(user_id)  # Consider adding error handling
@@ -34,67 +32,66 @@ if QUESTIONS_KEY not in st.session_state.keys():
 if TRASH_QUESTIONS_KEY not in st.session_state.keys():
     st.session_state[TRASH_QUESTIONS_KEY] = []
 
-# Add New Questions
-st.subheader("Add New Questions")
-question_text = st.text_input("Question Text")
-question_hint = st.text_input("Question Hint")
-if st.button("Add Question") and question_text:
-    db_manager.add_question_to_user(user_id, question_text,
-                                    question_hint)  # Consider adding error handling
-    del st.session_state[QUESTIONS_KEY]  # Trigger reload of IDs
-    st.rerun()
+with st.expander("Add and Delete Questions", expanded=True):
+    # Add New Questions
+    st.subheader("Add New Questions")
+    question_text = st.text_input("Question Text")
+    question_hint = st.text_input("Question Hint")
+    if st.button("Add Question") and question_text:
+        db_manager.add_question_to_user(user_id, question_text,
+                                        question_hint)  # Consider adding error handling
+        del st.session_state[QUESTIONS_KEY]  # Trigger reload of IDs
+        st.rerun()
 
-# Visualize Active Questions and Trash
-st.subheader("Active Questions")
-st.divider()
-for q in st.session_state[QUESTIONS_KEY]:
-    col1, col2 = st.columns([6, 1])
-    col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")
+    # Visualize Active Questions and Trash
+    st.subheader("Active Questions")
     st.divider()
-    if col2.button('‎\n\n🗑️\n\n‎', key=f"trash_{q.id}", use_container_width=True):
-        # TODO: Consider updating this status in the database
-        st.session_state[TRASH_QUESTIONS_KEY].append(q)
-        st.session_state[QUESTIONS_KEY].remove(q)
+    for q in st.session_state[QUESTIONS_KEY]:
+        col1, col2 = st.columns([6, 1])
+        col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")
+        st.divider()
+        if col2.button('‎\n\n🗑️\n\n‎', key=f"trash_{q.id}", use_container_width=True):
+            # TODO: Consider updating this status in the database
+            st.session_state[TRASH_QUESTIONS_KEY].append(q)
+            st.session_state[QUESTIONS_KEY].remove(q)
+            st.rerun()
+
+    st.subheader('Trash')
+    for q in st.session_state[TRASH_QUESTIONS_KEY]:
+        col1, col2 = st.columns([6, 1])
+        col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")
+        if col2.button('‎\n\n⬆️\n\n‎', key=f"untrash_{q.id}", use_container_width=True):
+            st.session_state[QUESTIONS_KEY].append(q)
+            st.session_state[TRASH_QUESTIONS_KEY].remove(q)
+            st.rerun()
+
+    # Delete Trash functionality
+    if st.button('Delete Trash'):
+        st.session_state[DELETE_CONFIRM_KEY] = True
         st.rerun()
 
-st.subheader('Trash')
-for q in st.session_state[TRASH_QUESTIONS_KEY]:
-    col1, col2 = st.columns([6, 1])
-    col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")
-    if col2.button('‎\n\n⬆️\n\n‎', key=f"untrash_{q.id}", use_container_width=True):
-        st.session_state[QUESTIONS_KEY].append(q)
-        st.session_state[TRASH_QUESTIONS_KEY].remove(q)
-        st.rerun()
+    if st.session_state.get(DELETE_CONFIRM_KEY):
+        st.markdown("Are you sure you want to delete these question(s)?")
+        if st.button('Yes', type="primary"):
+            # Consider adding error handling
+            db_manager.delete_questions(st.session_state[TRASH_QUESTIONS_KEY])
+            st.session_state[TRASH_QUESTIONS_KEY] = []
+            st.session_state[DELETE_CONFIRM_KEY] = False
+            st.rerun()
 
-# Delete Trash functionality
-if st.button('Delete Trash'):
-    st.session_state[DELETE_CONFIRM_KEY] = True
-    st.rerun()
-
-if st.session_state.get(DELETE_CONFIRM_KEY):
-    st.markdown("Are you sure you want to delete these question(s)?")
-    if st.button('Yes', type="primary"):
-        # Consider adding error handling
-        db_manager.delete_questions(st.session_state[TRASH_QUESTIONS_KEY])
-        st.session_state[TRASH_QUESTIONS_KEY] = []
-        st.session_state[DELETE_CONFIRM_KEY] = False
-        st.rerun()
-
-st.markdown("---")
+with st.expander("Extra Questions for Daily Entry", expanded=True):
+    # Locked Functionality questions
+    # Emotions
+    def change_emotional_analysis_state():
+        db_manager.reverse_emotion_analysis_state(user_id)
 
 
-# Locked Functionality questions
-# Emotions
-def change_emotional_analysis_state():
-    db_manager.reverse_emotion_analysis_state(user_id)
-
-
-emotional_analysis = db_manager.get_emotion_analysis(user_id)
-st.checkbox(
-    "Turn on Emotional Analysis",
-    value=emotional_analysis,
-    on_change=change_emotional_analysis_state
-)
+    emotional_analysis = db_manager.get_emotion_analysis(user_id)
+    st.checkbox(
+        "Turn on Emotional Analysis",
+        value=emotional_analysis,
+        on_change=change_emotional_analysis_state
+    )
 
 st.divider()
 if st.button("Logout", type="primary"):

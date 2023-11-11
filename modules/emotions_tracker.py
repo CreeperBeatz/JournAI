@@ -1,55 +1,94 @@
 import streamlit as st
 from typing import Tuple, Optional
 
-base_emotions = ["Bad", "Surprised", "Fearful", "Angry", "Disgusted", "Sad", "Happy"]
-
-# Example secondary emotions (you can expand or modify these)
-secondary_emotions = {
-    "Bad": ["Stressed", "Tense", "Bored"],
-    "Surprised": ["Amazed", "Startled", "Confused"],
-    "Fearful": ["Anxious", "Scared", "Worried"],
-    "Angry": ["Irritated", "Furious", "Annoyed"],
-    "Disgusted": ["Revolted", "Repelled", "Offended"],
-    "Sad": ["Gloomy", "Disheartened", "Mournful"],
-    "Happy": ["Joyful", "Content", "Pleased"]
+emotions_structure = {
+    "Happy": {
+        "Playful": ["Aroused", "Cheeky"],
+        "Content": ["Free", "Joyful"],
+        "Interested": ["Curious", "Inquisitive"],
+        "Proud": ["Successful", "Confident"],
+        "Accepted": ["Respected", "Valued"],
+        "Powerful": ["Courageous", "Creative"],
+        "Peaceful": ["Loving", "Thankful"],
+        "Trusting": ["Intimate", "Sensitive"]
+    },
+    "Sad": {
+        "Lonely": ["Isolated", "Abandoned"],
+        "Vulnerable": ["Victimized", "Fragile"],
+        "Despair": ["Grief", "Powerless"],
+        "Guilty": ["Ashamed", "Remorseful"],
+        "Depressed": ["Inferior", "Empty"],
+        "Hurt": ["Embarrassed", "Disappointed"]
+    },
+    "Disgusted": {
+        "Disapproving": ["Judgmental", "Embarrassed"],
+        "Disappointed": ["Appalled", "Revolted"],
+        "Awful": ["Nauseated", "Detestable"],
+        "Repelled": ["Horrified", "Hesitant"]
+    },
+    "Angry": {
+        "Let Down": ["Betrayed", "Resentful"],
+        "Humiliated": ["Disrespected", "Ridiculed"],
+        "Bitter": ["Indignant", "Violated"],
+        "Mad": ["Furious", "Jealous"],
+        "Aggressive": ["Provoked", "Hostile"],
+        "Frustrated": ["Infuriated", "Annoyed"],
+        "Distant": ["Withdrawn", "Numb"],
+        "Critical": ["Skeptical", "Dismissive"]
+    },
+    "Fearful": {
+        "Scared": ["Helpless", "Frightened"],
+        "Anxious": ["Overwhelmed", "Worried"],
+        "Insecure": ["Inadequate", "Inferior"],
+        "Weak": ["Worthless", "Insignificant"],
+        "Rejected": ["Excluded", "Persecuted"],
+        "Threatened": ["Nervous", "Exposed"]
+    },
+    "Bad": {
+        "Bored": ["Indifferent", "Apathetic"],
+        "Busy": ["Pressured", "Rushed"],
+        "Stressed": ["Overwhelmed", "Out of control"],
+        "Tired": ["Sleepy", "Unfocused"]
+    },
+    "Surprised": {
+        "Startled": ["Shocked", "Dismayed"],
+        "Confused": ["Disillusioned", "Perplexed"],
+        "Amazed": ["Astonished", "Awe"],
+        "Excited": ["Eager", "Energetic"]
+    }
 }
 
-# Example tertiary emotions (you can expand or modify these)
-tertiary_emotions = {
-    "Stressed": ["Overwhelmed", "Pressured"],
-    "Tense": ["Nervous", "On edge"],
-    "Bored": ["Indifferent", "Apathetic"],
-    # ... continue for other secondary emotions
-}
 
-
-def emotion_picker(label: str = "") -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    main_emotion = st.selectbox(
+def emotion_picker(label: str = "", key=None) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    base_emotion = st.selectbox(
         f"{label} - Main Emotion",
-        [''] + base_emotions,
-        index=0,
+        [''] + list(emotions_structure.keys()),
+        index=None,
         placeholder="Choose an emotion",
+        key=key + "1",
     )
 
     secondary_emotion = None
     tertiary_emotion = None
 
-    if main_emotion:
-        secondary_emotion_options = [''] + secondary_emotions.get(main_emotion, [])
+    if base_emotion:
+        secondary_emotions = list(emotions_structure[base_emotion].keys())
         secondary_emotion = st.selectbox(
             f"Can you further define your emotion? (Optional)",
-            secondary_emotion_options,
-            index=0,
+            [''] + secondary_emotions,
+            index=None,
             placeholder="Choose a secondary emotion",
+            key=key + "2",
         )
 
     if secondary_emotion:
-        tertiary_emotion_options = [''] + tertiary_emotions.get(secondary_emotion, [])
+        tertiary_emotions = emotions_structure[base_emotion][secondary_emotion]
         tertiary_emotion = st.selectbox(
             f"Is your emotion a variation of one of these (Optional)",
-            tertiary_emotion_options,
-            index=0,
-            placeholder="Choose a tertiary emotion"
+            [''] + tertiary_emotions,
+            index=None,
+            placeholder="Choose a tertiary emotion",
+            key=key + "3",
         )
 
-    return main_emotion, secondary_emotion, tertiary_emotion
+    return base_emotion, secondary_emotion, tertiary_emotion

@@ -6,7 +6,7 @@ from database.models import Question
 from modules.config_manager import PAGE_CONFIG
 import streamlit as st
 
-from modules.emotions_tracker import base_emotions, emotion_picker
+from modules.emotions_tracker import emotion_picker
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
@@ -66,10 +66,11 @@ if daily_questions:
                 st.success("Your answers have been successfully saved.")
 
 if show_emotion_picker:
-    main_emotion = emotion_picker("What was the main emotion you felt during the day?")
-    st.divider()
-    secondary_emotion = emotion_picker("Is there a secondary emotion you felt during the day?")
+    with st.expander("Emotions analysis", expanded=True):
+        main_emotion = emotion_picker("What was the main emotion you felt during the day?", "main")
+        st.divider()
+        secondary_emotion = emotion_picker("Is there a secondary emotion you felt during the day?", "secondary")
 
-    if st.button("Submit Emotions"):
-        # TODO save emotions in DB
-        pass
+        if st.button("Submit Emotions"):
+            # TODO save emotions in DB
+            pass

@@ -14,6 +14,9 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     password = Column(BLOB, nullable=False)  # Make sure to use a strong hashing algorithm
 
+    # Analysis items
+    emotions_analysis = Column(Boolean, nullable=False, default=True)
+
     # Relationships
     questions = relationship('Question', back_populates='user')
     journal_entries = relationship('JournalEntry', back_populates='user')

@@ -2,6 +2,7 @@ from datetime import date
 from typing import List, Optional
 
 from sqlalchemy import create_engine, and_
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
 from database.models import Base, User, Question, JournalEntry, WeeklySummary, MonthlySummary
 
@@ -38,6 +39,23 @@ class DBManager:
             return user.id
         return -1
 
+    def get_emotion_analysis(self, user_id) -> bool:
+        user = self.session.query(User).filter_by(id=user_id).first()
+        if not user:
+            raise NoResultFound("No user with that user_id")
+
+        if user.emotions_analysis:
+            return True
+        return False
+
+    def reverse_emotion_analysis_state(self, user_id):
+        user = self.session.query(User).filter_by(id=user_id).first()
+        if not user:
+            raise NoResultFound("No user with that user_id")
+
+        user.emotions_analysis = not user.emotions_analysis
+        self.session.commit()
+
     # endregion
 
     # region Journal Entry related operations
@@ -67,7 +85,9 @@ class DBManager:
 
         self.session.commit()
 
-    # Weekly Summary related operations
+    # endregion
+
+    # region Weekly Summary related operations
     def save_weekly_summary(self, user_id, summary):
         weekly_summary = WeeklySummary(user_id=user_id, summary=summary)
         self.session.add(weekly_summary)
@@ -79,7 +99,9 @@ class DBManager:
         self.session.add(monthly_summary)
         self.session.commit()
 
-    # Question related operations
+    # endregion
+
+    # region Question related operations
     def add_question_to_user(self, user_id, question_text, question_hint=None):
         question = Question(user_id=user_id, question_text=question_text, question_hint=question_hint)
         self.session.add(question)
@@ -100,7 +122,9 @@ class DBManager:
             self.delete_question(question.user_id, question.id)
         self.session.commit()
 
-    # History related operations
+    # endregion
+
+    # region History related operations
     def get_weekly_summaries(self, user_id):
         summaries = self.session.query(WeeklySummary).filter_by(user_id=user_id).all()
         return [s.summary for s in summaries]
@@ -108,3 +132,5 @@ class DBManager:
     def get_monthly_summaries(self, user_id):
         summaries = self.session.query(MonthlySummary).filter_by(user_id=user_id).all()
         return [s.summary for s in summaries]
+
+    # endregion

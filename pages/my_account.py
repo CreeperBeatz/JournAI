@@ -39,7 +39,8 @@ st.subheader("Add New Questions")
 question_text = st.text_input("Question Text")
 question_hint = st.text_input("Question Hint")
 if st.button("Add Question") and question_text:
-    db_manager.add_question_to_user(user_id, question_text, question_hint)  # Consider adding error handling
+    db_manager.add_question_to_user(user_id, question_text,
+                                    question_hint)  # Consider adding error handling
     del st.session_state[QUESTIONS_KEY]  # Trigger reload of IDs
     st.rerun()
 
@@ -81,9 +82,21 @@ if st.session_state.get(DELETE_CONFIRM_KEY):
 
 st.markdown("---")
 
+
 # Locked Functionality questions
 # Emotions
+def change_emotional_analysis_state():
+    db_manager.reverse_emotion_analysis_state(user_id)
 
+
+emotional_analysis = db_manager.get_emotion_analysis(user_id)
+st.checkbox(
+    "Turn on Emotional Analysis",
+    value=emotional_analysis,
+    on_change=change_emotional_analysis_state
+)
+
+st.divider()
 if st.button("Logout", type="primary"):
     for key, _ in st.session_state.items():
         del st.session_state[key]

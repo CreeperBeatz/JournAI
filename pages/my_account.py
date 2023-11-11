@@ -34,7 +34,7 @@ if TRASH_QUESTIONS_KEY not in st.session_state.keys():
 
 with st.expander("Add and Delete Questions", expanded=True):
     # Add New Questions
-    st.subheader("Add New Questions")
+    st.markdown("<h3 style='text-align: center;'>Add New Questions</h1>", unsafe_allow_html=True)
     question_text = st.text_input("Question Text")
     question_hint = st.text_input("Question Hint")
     if st.button("Add Question") and question_text:
@@ -44,19 +44,21 @@ with st.expander("Add and Delete Questions", expanded=True):
         st.rerun()
 
     # Visualize Active Questions and Trash
-    st.subheader("Active Questions")
-    st.divider()
+    #st.divider()
+    st.markdown("<h3 style='text-align: center;'>Active Questions</h1>", unsafe_allow_html=True)
+    #st.divider()
     for q in st.session_state[QUESTIONS_KEY]:
         col1, col2 = st.columns([6, 1])
         col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")
-        st.divider()
         if col2.button('‎\n\n🗑️\n\n‎', key=f"trash_{q.id}", use_container_width=True):
             # TODO: Consider updating this status in the database
             st.session_state[TRASH_QUESTIONS_KEY].append(q)
             st.session_state[QUESTIONS_KEY].remove(q)
             st.rerun()
 
-    st.subheader('Trash')
+    #st.divider()
+    st.markdown("<h3 style='text-align: center;'>Trash</h1>", unsafe_allow_html=True)
+    #st.divider()
     for q in st.session_state[TRASH_QUESTIONS_KEY]:
         col1, col2 = st.columns([6, 1])
         col1.markdown(f"#### {q.question_text} \n\n{q.question_hint}")

@@ -61,7 +61,7 @@ emotions_structure = {
 
 def emotion_picker(label: str = "", key=None) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     base_emotion = st.selectbox(
-        f"{label} - Main Emotion",
+        f"{label}",
         [''] + list(emotions_structure.keys()),
         index=None,
         placeholder="Choose an emotion",

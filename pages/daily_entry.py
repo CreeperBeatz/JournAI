@@ -67,6 +67,7 @@ if daily_questions:
 
 if show_emotion_picker:
     with st.expander("Emotions analysis", expanded=True):
+        st.image("images/emotion_wheel.png")
         main_emotion = emotion_picker("What was the main emotion you felt during the day?", "main")
         st.divider()
         secondary_emotion = emotion_picker("Is there a secondary emotion you felt during the day?", "secondary")

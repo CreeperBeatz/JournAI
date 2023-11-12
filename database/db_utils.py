@@ -4,7 +4,8 @@ from typing import List, Optional
 from sqlalchemy import create_engine, and_
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
-from database.models import Base, User, Question, JournalEntry, WeeklySummary, MonthlySummary
+from database.models import Base, User, Question, JournalEntry, WeeklySummary, MonthlySummary, \
+    EmotionEntry
 
 import bcrypt
 
@@ -79,6 +80,36 @@ class DBManager:
                 user_id=user_id,
                 question_id=question_id,
                 answer=answer,
+                date=entry_date
+            )
+            self.session.add(new_entry)
+
+        self.session.commit()
+
+    # endregion
+
+    # region Emotion Entry related operations
+    def get_emotion_entry(self, user_id, entry_date: date = date.today()):
+        entry = self.session.query(EmotionEntry).filter(
+            and_(
+                EmotionEntry.user_id == user_id,
+                EmotionEntry.date == entry_date
+            )
+        ).first()
+        return entry
+
+    def save_emotion_entry(self, user_id, main_emotion: str, secondary_emotion: str,
+                           entry_date: date = date.today()):
+        existing_entry = self.get_emotion_entry(user_id, entry_date)
+
+        if existing_entry:
+            existing_entry.main_emotion = main_emotion
+            existing_entry.secondary_emotion = secondary_emotion
+        else:
+            new_entry = EmotionEntry(
+                user_id=user_id,
+                main_emotion=main_emotion,
+                secondary_emotion=secondary_emotion,
                 date=entry_date
             )
             self.session.add(new_entry)

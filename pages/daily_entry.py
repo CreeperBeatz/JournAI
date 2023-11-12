@@ -67,11 +67,20 @@ if daily_questions:
 
 if show_emotion_picker:
     with st.expander("Emotions analysis", expanded=True):
-        st.image("images/emotion_wheel.png")
-        main_emotion = emotion_picker("What was the main emotion you felt during the day?", "main")
-        st.divider()
-        secondary_emotion = emotion_picker("Is there a secondary emotion you felt during the day?", "secondary")
 
-        if st.button("Submit Emotions"):
-            # TODO save emotions in DB
-            pass
+        emotion_entry = db_manager.get_emotion_entry(user_id)
+
+        st.image("images/emotion_wheel.png")
+        main_emotion = emotion_picker(
+            "What was the main emotion you felt during the day?",
+            "main",
+            emotion_entry.main_emotion if emotion_entry else None,
+        )
+        st.divider()
+        secondary_emotion = emotion_picker(
+            "Is there a secondary emotion you felt during the day?",
+            "secondary",
+            emotion_entry.secondary_emotion if emotion_entry else None,
+        )
+
+        db_manager.save_emotion_entry(user_id, main_emotion, secondary_emotion)

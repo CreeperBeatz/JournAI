@@ -3,9 +3,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from datetime import date
+
 # Consider using bcrypt or Argon2 for hashing
 
 Base = declarative_base()
+
 
 # User Table representing user information
 class User(Base):
@@ -20,6 +22,7 @@ class User(Base):
     # Relationships
     questions = relationship('Question', back_populates='user')
     journal_entries = relationship('JournalEntry', back_populates='user')
+    emotion_entries = relationship('EmotionEntry', back_populates='user')
     weekly_summaries = relationship('WeeklySummary', back_populates='user')
     monthly_summaries = relationship('MonthlySummary', back_populates='user')
     yearly_summaries = relationship('YearlySummary', back_populates='user')
@@ -50,6 +53,19 @@ class JournalEntry(Base):
     # Relationships
     user = relationship('User', back_populates='journal_entries')
     question = relationship('Question')
+
+
+# Emotion Entry Table
+class EmotionEntry(Base):
+    __tablename__ = 'emotion_entries'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    main_emotion = Column(String(255))
+    secondary_emotion = Column(String(255), nullable=True)
+    date = Column(Date, nullable=False, default=date.today())
+
+    # Relationships
+    user = relationship('User', back_populates='emotion_entries')
 
 
 # Weekly Summary Table

@@ -16,6 +16,7 @@ DELETE_CONFIRM_KEY = "delete_confirm"
 # Early escape if user is not logged in
 if "current_user" not in st.session_state.keys():
     st.text("Please log in to see this menu!")
+    setup_pages_no_login()
     exit(0)
 
 user_id = st.session_state['user_id']

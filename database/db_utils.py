@@ -1,4 +1,5 @@
-from datetime import date
+import datetime
+from datetime import date, datetime
 from typing import List, Optional
 
 from sqlalchemy import create_engine, and_
@@ -85,6 +86,10 @@ class DBManager:
             self.session.add(new_entry)
 
         self.session.commit()
+
+    def get_first_journal_entry_date(self, user_id):
+        entry = self.session.query(JournalEntry).filter(JournalEntry.user_id == user_id).order_by(JournalEntry.date).first()
+        return entry.date if entry else datetime.min
 
     # endregion
 

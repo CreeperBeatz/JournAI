@@ -1,4 +1,5 @@
 import streamlit as st
+import datetime
 from database.db_utils import DBManager
 from modules.config_manager import PAGE_CONFIG
 from modules.streamlit_helper import period_picker, PeriodOptions, setup_pages_no_login
@@ -20,12 +21,18 @@ class MenuOptions(ExtendedEnum):
     insights = "Insights"
 
 
-week_start, week_end, chosen_week = period_picker("Choose a week", PeriodOptions.WEEK)
+user_id = st.session_state['user_id']
+db_manager = DBManager()
+first_answer_date = db_manager.get_first_journal_entry_date(user_id)
+week_start, week_end, chosen_week = period_picker(
+    "Choose a week",
+    PeriodOptions.WEEK,
+    first_answer_date,
+    datetime.datetime.now()
+)
 st.markdown(f"You have chosen: *{chosen_week}*")
 
 choice = st.selectbox("Select Analysis", MenuOptions.values(), label_visibility='visible')
-
-db_manager = DBManager()
 
 match choice:
     case MenuOptions.answers_by_date.value:

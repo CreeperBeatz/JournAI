@@ -1,7 +1,7 @@
 import streamlit as st
 from database.db_utils import DBManager
 from database.models import Question
-from modules.streamlit_helper import setup_pages
+from modules.streamlit_helper import setup_pages, setup_pages_no_login
 from modules.config_manager import PAGE_CONFIG
 
 # Initialize Streamlit

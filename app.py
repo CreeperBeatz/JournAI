@@ -3,11 +3,10 @@ from sqlalchemy.exc import IntegrityError
 
 from database.db_utils import DBManager
 from modules.config_manager import PAGE_CONFIG
-from modules.streamlit_helper import setup_pages, setup_pages_with_login
+from modules.streamlit_helper import setup_pages_with_login, setup_pages_no_login
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
-setup_pages()
 
 # Page content
 st.title("Welcome to JournAI")
@@ -15,7 +14,10 @@ st.title("Welcome to JournAI")
 
 # Early escape if user is not logged in
 if "current_user" in st.session_state.keys():
+    setup_pages_with_login()
     exit(0)
+else:
+    setup_pages_no_login()
 
 menu = ["Login", "Sign Up"]
 choice = st.selectbox("Login or Signup", menu, label_visibility='hidden')

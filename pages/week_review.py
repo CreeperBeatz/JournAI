@@ -4,6 +4,7 @@ from database.db_utils import DBManager
 from modules.config_manager import PAGE_CONFIG
 from modules.streamlit_helper import period_picker, PeriodOptions, setup_pages
 from modules.utilities import ExtendedEnum
+import modules.summary_manager as summary_manager
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
@@ -35,6 +36,11 @@ match choice:
     case MenuOptions.mood_review.value:
         st.text("Mood review TODO")
     case MenuOptions.insights.value:
-        st.text("Insights TODO")
+        if st.button("Get insights"):
+            st.info("Getting insights...")
+            questions = ["What do I want more of"]
+            answers = ["socials, events", "chilling, sleep", "socials", "sport", "?", "Socials, hobbies"]
+            for question in questions:
+                st.text(summary_manager.get_weekly_summary(questions[0], answers))
     case _:
         pass

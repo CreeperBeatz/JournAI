@@ -29,25 +29,20 @@ def setup_pages_with_login():
         Page("pages/year_review.py", "Year Review", "📖"),
     ])
 
-    if st.sidebar.button("Logout", type="primary"):
-        for key, _ in st.session_state.items():
-            del st.session_state[key]
-        setup_pages_no_login()
-        st.rerun()
-
 
 def setup_pages():
     if user_authenticated():
         setup_pages_with_login()
     else:
         setup_pages_no_login()
+        st.rerun()
+
 
 def user_authenticated():
     # TODO make comprehensive with Cookie Support
     if "current_user" in st.session_state.keys():
         return True
     return False
-
 
 
 def period_picker(label: str = "Select a date",

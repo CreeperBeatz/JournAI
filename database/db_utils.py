@@ -1,6 +1,6 @@
 import datetime
 from datetime import date, datetime
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from sqlalchemy import create_engine, and_
 from sqlalchemy.exc import NoResultFound
@@ -57,6 +57,10 @@ class DBManager:
 
         user.emotions_analysis = not user.emotions_analysis
         self.session.commit()
+
+    def get_all_users(self) -> list[Type[User]]:
+        return self.session.query(User).all()
+
 
     # endregion
 

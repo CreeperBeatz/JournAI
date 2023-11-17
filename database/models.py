@@ -14,6 +14,8 @@ class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
+    nickname = Column(String(50), nullable=True)
+    email = Column(String(256), nullable=True)
     password = Column(BLOB, nullable=False)  # Make sure to use a strong hashing algorithm
 
     # Analysis items

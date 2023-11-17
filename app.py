@@ -1,6 +1,7 @@
 import streamlit as st
 from modules.config_manager import PAGE_CONFIG
 from modules.streamlit_helper import setup_pages_no_login, setup_pages_with_login
+import streamlit_authenticator as stauth
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)

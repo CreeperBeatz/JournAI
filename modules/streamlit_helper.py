@@ -1,6 +1,7 @@
 import calendar
 from enum import Enum
 
+from streamlit_extras.switch_page_button import switch_page
 from st_pages import Page, show_pages
 import streamlit as st
 import datetime
@@ -15,7 +16,6 @@ class PeriodOptions(Enum):
 def setup_pages_no_login():
     show_pages([
         Page("app.py", "Home", "🎃"),
-        Page("pages/login.py", "Login", "💫")
     ])
 
 
@@ -29,13 +29,32 @@ def setup_pages_with_login():
         Page("pages/year_review.py", "Year Review", "📖"),
     ])
 
+    if st.sidebar.button("Logout", type="primary"):
+        for key, _ in st.session_state.items():
+            del st.session_state[key]
+        setup_pages_no_login()
+        st.rerun()
+
+
+def setup_pages():
+    if user_authenticated():
+        setup_pages_with_login()
+    else:
+        setup_pages_no_login()
+
+def user_authenticated():
+    # TODO make comprehensive with Cookie Support
+    if "current_user" in st.session_state.keys():
+        return True
+    return False
+
+
 
 def period_picker(label: str = "Select a date",
                   period: PeriodOptions = PeriodOptions.WEEK,
                   start_date_limit: datetime.date = None,
                   end_date_limit: datetime.date = None,
                   ):
-
     if start_date_limit and end_date_limit:
         selected_date = st.date_input(label, min_value=start_date_limit, max_value=end_date_limit)
     elif start_date_limit:

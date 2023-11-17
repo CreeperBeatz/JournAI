@@ -1,12 +1,10 @@
 from modules.config_manager import PAGE_CONFIG
 import streamlit as st
-from modules.streamlit_helper import setup_pages_no_login
+from modules.streamlit_helper import setup_pages
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
+setup_pages()
 
-# Early escape if user is not logged in
-if "current_user" not in st.session_state.keys():
-    st.warning("Please log in to see this menu!")
-    setup_pages_no_login()
-    exit(0)
+# Get user id from state
+user_id = st.session_state.user_id

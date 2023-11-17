@@ -1,23 +1,18 @@
 import streamlit as st
 from database.db_utils import DBManager
 from database.models import Question
-from modules.streamlit_helper import setup_pages_no_login
+from modules.streamlit_helper import setup_pages
 from modules.config_manager import PAGE_CONFIG
 
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
+setup_pages()
 
 db_manager = DBManager()
 
 QUESTIONS_KEY = "questions"
 TRASH_QUESTIONS_KEY = "trash_questions"
 DELETE_CONFIRM_KEY = "delete_confirm"
-
-# Early escape if user is not logged in
-if "current_user" not in st.session_state.keys():
-    st.text("Please log in to see this menu!")
-    setup_pages_no_login()
-    exit(0)
 
 user_id = st.session_state['user_id']
 st.markdown("# Personal Details")

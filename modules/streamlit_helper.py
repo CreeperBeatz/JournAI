@@ -1,7 +1,5 @@
 import calendar
 from enum import Enum
-
-from streamlit_extras.switch_page_button import switch_page
 from st_pages import Page, show_pages
 import streamlit as st
 import datetime

@@ -2,14 +2,12 @@ import datetime
 from datetime import date, datetime
 from typing import List, Optional, Type
 
+import modules.auth as auth
 from sqlalchemy import create_engine, and_
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
 from database.models import Base, User, Question, JournalEntry, WeeklySummary, MonthlySummary, \
     EmotionEntry
-
-import bcrypt
-
 
 class DBManager:
 
@@ -20,11 +18,9 @@ class DBManager:
         self.session = Session()
         Base.metadata.create_all(engine)
 
-        self.salt = bcrypt.gensalt()
-
     # region User related operations
     def add_user(self, username, password):
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), self.salt)
+        hashed_password = auth.hash_password(password)
         user = User(username=username, password=hashed_password)
         self.session.add(user)
         self.session.commit()
@@ -32,7 +28,7 @@ class DBManager:
     def verify_login(self, username, password):
         user = self.session.query(User).filter_by(username=username).first()
         if user:
-            return bcrypt.checkpw(password.encode('utf-8'), user.password)
+            return auth.verify_password(password, user.password)
         return False
 
     def get_user_id(self, username):

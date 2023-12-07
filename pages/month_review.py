@@ -8,3 +8,6 @@ setup_pages()
 
 # Get user id from state
 user_id = st.session_state.user_id
+
+# TODO summary of weeks
+# TODO chat with GPT about what you want about them

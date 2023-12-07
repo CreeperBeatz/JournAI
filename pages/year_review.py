@@ -5,3 +5,6 @@ from modules.streamlit_helper import setup_pages
 # Initialize Streamlit
 st.set_page_config(**PAGE_CONFIG)
 setup_pages()
+
+# TODO summary of months
+# TODO chat with GPT about what you want about them

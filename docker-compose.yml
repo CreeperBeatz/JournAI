@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  journai:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./journal_app.db:/app/journal_app.db
+    restart: unless-stopped

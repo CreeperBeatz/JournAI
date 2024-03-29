@@ -1,0 +1,17 @@
+.venv
+.vscode
+.idea
+/modules/__pycache__
+/logs
+*.log
+/data-samples-text
+/data_extraction_scripts/__pycache__
+/models/__pycache__
+/notebooks/logs
+problem*.py
+temp
+build
+dist
+__pycache__
+/.debenv/
+chats

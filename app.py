@@ -3,11 +3,12 @@ import streamlit_authenticator as stauth
 from modules.config import config, PAGE_CONFIG
 import logging
 import modules.streamlit_helper as sthelper
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-# from decouple import config
 from langchain.memory import ConversationBufferWindowMemory
+
+from modules.conversations import list_conversations, Conversation, load_conversation, save_conversation
 
 logging.basicConfig(level=logging.INFO)
 st.set_page_config(**PAGE_CONFIG)
@@ -33,18 +34,18 @@ elif authentication_status is None:
     st.stop()
 
 sthelper.setup_pages()
+# sthelper.render_sidebar()
 sthelper.show_sidebar_logout_button()
 
 # TODO Chat
 prompt = PromptTemplate(
     input_variables=["chat_history", "question"],
-    template="""You are a very kindl and friendly AI assistant. You are
-    currently having a conversation with a human. Answer the questions
-    in a kind and friendly tone with some sense of humor.
+    template="""You are a friendly AI assistant. You are
+    currently having a conversation with a human. 
 
     chat_history: {chat_history},
-    Human: {question}
-    AI:"""
+    user: {question}
+    assistant:"""
 )
 
 llm = ChatOpenAI(openai_api_key=config["openai"]["token"])
@@ -59,29 +60,45 @@ llm_chain = LLMChain(
 st.title("JournAI")
 st.markdown("Welcome to JournAI!\n\n")
 
-# check for messages in session and create if not exists
-if "messages" not in st.session_state.keys():
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Hello there, am ChatGPT clone"}
-    ]
+# Load the newest conversations
+conversations = list_conversations(username)
+with st.sidebar:
+    current_conversation_title = st.radio(
+        "Choose a conversation",
+        options=list(conversations.values()),
+    )
 
+    # Get key (conversation ID) based on the selected conversation title
+    # This is a reverse lookup, finding the first key that matches the chosen title
+    if conversations:
+        chosen_conversation_id = next(
+            key for key, value in conversations.items() if value == current_conversation_title
+        )
+        st.session_state.current_conversation = load_conversation(username, chosen_conversation_id)
+
+if "current_conversation" not in st.session_state.keys():
+    st.session_state.current_conversation = Conversation()
+    st.session_state.current_conversation.add_turn("assistant", "Hi! How can I help you today?")
 
 # Display all messages
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+for turn in st.session_state.current_conversation.turns:
+    print(turn)
+    with st.chat_message(turn["role"]):
+        st.write(turn["text"])
 
 user_prompt = st.chat_input()
 
 if user_prompt is not None:
-    st.session_state.messages.append({"role": "user", "content": user_prompt})
+    st.session_state.current_conversation.add_turn("user", user_prompt)
     with st.chat_message("user"):
         st.write(user_prompt)
 
-if st.session_state.messages[-1]["role"] != "assistant":
+if st.session_state.current_conversation.turns[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Loading..."):
             ai_response = llm_chain.predict(question=user_prompt)
             st.write(ai_response)
-    new_ai_message = {"role": "assistant", "content": ai_response}
-    st.session_state.messages.append(new_ai_message)
+    st.session_state.current_conversation.add_turn("assistant", ai_response)
+
+# Save the conversation
+save_conversation(username, st.session_state.current_conversation)

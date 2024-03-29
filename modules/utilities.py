@@ -16,3 +16,4 @@ class ExtendedEnum(Enum):
             array_like: List of the possible enum values.
         """
         return list(map(lambda c: c.value, cls))
+

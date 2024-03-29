@@ -1,0 +1,13 @@
+cookie:
+  expiry_days: 30
+  key: some_key
+  name: some_name
+credentials:
+  usernames:
+    example: {}
+    admin:
+      email: admin@gmail.com
+      name: Admin
+      password: $2a$04$qwhbI8LaUHomSEF7wpz0L.xZtiwF1LVnVNtnXP4Sk8uGMcAJgJd.K
+openai:
+  token: token_here

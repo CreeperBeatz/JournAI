@@ -1,5 +1,7 @@
 import streamlit as st
 import streamlit_authenticator as stauth
+import yaml
+
 from modules.config import config, PAGE_CONFIG
 import logging
 import modules.streamlit_helper as sthelper
@@ -30,12 +32,16 @@ if authentication_status is False:
     st.stop()
 elif authentication_status is None:
     sthelper.show_only_first_page()
-    st.warning("Please enter your username and password")
+    try:
+        if authenticator.register_user('Register user', preauthorization=False):
+            st.success('User registered successfully. You can log in now.')
+        with open('config.yaml', 'w') as file:
+            yaml.dump(config, file, default_flow_style=False)
+    except Exception as e:
+        st.error(e)
     st.stop()
 
 sthelper.setup_pages()
-# sthelper.render_sidebar()
-sthelper.show_sidebar_logout_button()
 
 # TODO Chat
 prompt = PromptTemplate(
@@ -61,28 +67,34 @@ st.title("JournAI")
 st.markdown("Welcome to JournAI!\n\n")
 
 # Load the newest conversations
-conversations = list_conversations(username)
+conversation_options = list_conversations(username)
+
 with st.sidebar:
-    current_conversation_title = st.radio(
+
+    # Create a placeholder for the button
+    new_conversation_placeholder = st.empty()
+
+    chosen_conversation = st.radio(
         "Choose a conversation",
-        options=list(conversations.values()),
+        options=conversation_options,
+        format_func=lambda x: conversation_options[x]['title'],
+        index=None,
     )
 
-    # Get key (conversation ID) based on the selected conversation title
-    # This is a reverse lookup, finding the first key that matches the chosen title
-    if conversations:
-        chosen_conversation_id = next(
-            key for key, value in conversations.items() if value == current_conversation_title
-        )
-        st.session_state.current_conversation = load_conversation(username, chosen_conversation_id)
+    # use the placeholder to add the "New Conversation" button
+    if new_conversation_placeholder.button("➕ New Conversation"):
+        chosen_conversation = None
 
-if "current_conversation" not in st.session_state.keys():
+
+
+if chosen_conversation:
+    st.session_state.current_conversation = load_conversation(username, chosen_conversation)
+else:
+    st.session_state.get("current_conversation")
     st.session_state.current_conversation = Conversation()
-    st.session_state.current_conversation.add_turn("assistant", "Hi! How can I help you today?")
 
 # Display all messages
 for turn in st.session_state.current_conversation.turns:
-    print(turn)
     with st.chat_message(turn["role"]):
         st.write(turn["text"])
 
@@ -93,12 +105,15 @@ if user_prompt is not None:
     with st.chat_message("user"):
         st.write(user_prompt)
 
-if st.session_state.current_conversation.turns[-1]["role"] != "assistant":
-    with st.chat_message("assistant"):
-        with st.spinner("Loading..."):
-            ai_response = llm_chain.predict(question=user_prompt)
-            st.write(ai_response)
-    st.session_state.current_conversation.add_turn("assistant", ai_response)
+if st.session_state.current_conversation.turns:
+    if st.session_state.current_conversation.turns[-1]["role"] != "assistant":
+        with st.chat_message("assistant"):
+            with st.spinner("Loading..."):
+                ai_response = llm_chain.predict(question=user_prompt)
+                st.write(ai_response)
+        st.session_state.current_conversation.add_turn("assistant", ai_response)
+    # Save the conversation
+    save_conversation(username, st.session_state.current_conversation)
 
-# Save the conversation
-save_conversation(username, st.session_state.current_conversation)
+st.sidebar.divider()
+sthelper.show_sidebar_logout_button()

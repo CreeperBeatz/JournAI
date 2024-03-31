@@ -24,7 +24,7 @@ authenticator = stauth.Authenticate(
 
 st.session_state.authenticator = authenticator
 
-name, authentication_status, username = authenticator.login("Login", "main")
+name, authentication_status, username = authenticator.login("main")
 
 if authentication_status is False:
     sthelper.show_only_first_page()
@@ -33,7 +33,7 @@ if authentication_status is False:
 elif authentication_status is None:
     sthelper.show_only_first_page()
     try:
-        if authenticator.register_user('Register user', preauthorization=False):
+        if authenticator.register_user(pre_authorization=False):
             st.success('User registered successfully. You can log in now.')
         with open('config.yaml', 'w') as file:
             yaml.dump(config, file, default_flow_style=False)

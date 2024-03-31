@@ -6,3 +6,4 @@ PyYAML~=6.0.1
 langchain==0.1.13
 decouple==0.0.7
 langchain-community==0.0.29
+streamlit_authenticator==0.3.2

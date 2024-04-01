@@ -1,66 +1,18 @@
 import streamlit as st
-import streamlit_authenticator as stauth
-import yaml
-
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from modules.chatbot import ChatBot
 from modules.config import config, PAGE_CONFIG
 import logging
 import modules.streamlit_helper as sthelper
-from langchain_community.chat_models import ChatOpenAI
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain.memory import ConversationBufferWindowMemory
-
-from modules.conversations import list_conversations, Conversation, load_conversation, save_conversation
+from model.conversation import Conversation
+from modules.utilities import save_conversation, load_conversation, list_conversations
 
 logging.basicConfig(level=logging.INFO)
 st.set_page_config(**PAGE_CONFIG)
 
-authenticator = stauth.Authenticate(
-    config["credentials"],
-    config["cookie"]["name"],
-    config["cookie"]["key"],
-    config["cookie"]["expiry_days"],
-)
-
-st.session_state.authenticator = authenticator
-
-name, authentication_status, username = authenticator.login("main")
-
-if authentication_status is False:
-    sthelper.show_only_first_page()
-    st.error("Username/password is incorrect")
-    st.stop()
-elif authentication_status is None:
-    sthelper.show_only_first_page()
-    try:
-        if authenticator.register_user(pre_authorization=False):
-            st.success('User registered successfully. You can log in now.')
-        with open('config.yaml', 'w') as file:
-            yaml.dump(config, file, default_flow_style=False)
-    except Exception as e:
-        st.error(e)
-    st.stop()
-
+# Ensure user is logged in
+username = sthelper.authenticate()
 sthelper.setup_pages()
-
-# TODO Chat
-prompt = PromptTemplate(
-    input_variables=["chat_history", "question"],
-    template="""You are a friendly AI assistant. You are
-    currently having a conversation with a human. 
-
-    chat_history: {chat_history},
-    user: {question}
-    assistant:"""
-)
-
-llm = ChatOpenAI(openai_api_key=config["openai"]["token"])
-memory = ConversationBufferWindowMemory(memory_key="chat_history", k=4)
-llm_chain = LLMChain(
-    llm=llm,
-    memory=memory,
-    prompt=prompt
-)
 
 # Page content
 st.title("JournAI")
@@ -70,7 +22,6 @@ st.markdown("Welcome to JournAI!\n\n")
 conversation_options = list_conversations(username)
 
 with st.sidebar:
-
     # Create a placeholder for the button
     new_conversation_placeholder = st.empty()
 
@@ -85,33 +36,39 @@ with st.sidebar:
     if new_conversation_placeholder.button("➕ New Conversation"):
         chosen_conversation = None
 
-
-
 if chosen_conversation:
     st.session_state.current_conversation = load_conversation(username, chosen_conversation)
 else:
     st.session_state.get("current_conversation")
     st.session_state.current_conversation = Conversation()
 
+# Initialize chatbot instance
+# TODO fix spaghetti code
+chatbot = ChatBot()
+
 # Display all messages
-for turn in st.session_state.current_conversation.turns:
-    with st.chat_message(turn["role"]):
-        st.write(turn["text"])
+for turn in st.session_state.current_conversation.history.messages:
+    prefix_map = {
+        HumanMessage: "user",
+        AIMessage: "assistant"
+    }
+    with st.chat_message(prefix_map[type(turn)]):
+        st.write(turn.content)
 
 user_prompt = st.chat_input()
 
 if user_prompt is not None:
-    st.session_state.current_conversation.add_turn("user", user_prompt)
+    st.session_state.current_conversation.add_user_turn(user_prompt)
     with st.chat_message("user"):
         st.write(user_prompt)
 
-if st.session_state.current_conversation.turns:
-    if st.session_state.current_conversation.turns[-1]["role"] != "assistant":
+if st.session_state.current_conversation.history.messages:
+    if type(st.session_state.current_conversation.history.messages[-1]) is HumanMessage:
         with st.chat_message("assistant"):
             with st.spinner("Loading..."):
-                ai_response = llm_chain.predict(question=user_prompt)
+                ai_response = chatbot.predict(st.session_state.current_conversation)
                 st.write(ai_response)
-        st.session_state.current_conversation.add_turn("assistant", ai_response)
+        st.session_state.current_conversation.add_ai_turn(ai_response)
     # Save the conversation
     save_conversation(username, st.session_state.current_conversation)
 

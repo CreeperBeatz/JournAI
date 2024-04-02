@@ -1,82 +1,105 @@
-import calendar
-from enum import Enum
+import time
+import streamlit_authenticator as stauth
+import yaml
 from st_pages import Page, show_pages
 import streamlit as st
-import datetime
+from streamlit.source_util import _on_pages_changed, get_pages
+from streamlit_extras.switch_page_button import switch_page
 
+from modules.config import config
 
-class PeriodOptions(Enum):
-    WEEK = 1,
-    MONTH = 2,
-    YEAR = 3,
-
-
-def setup_pages_no_login():
-    show_pages([
-        Page("app.py", "Home", "🎃"),
-    ])
-
-
-def setup_pages_with_login():
-    show_pages([
-        Page("app.py", "Home", "🎃"),
-        Page("pages/my_account.py", "My Account", "🦱"),
-        Page("pages/daily_entry.py", "Daily Entry", "✒️"),
-        Page("pages/week_review.py", "Week Review", "📃"),
-        Page("pages/month_review.py", "Month Review", "📰"),
-        Page("pages/year_review.py", "Year Review", "📖"),
-    ])
+DEFAULT_PAGE = "app.py"
 
 
 def setup_pages():
-    if user_authenticated():
-        setup_pages_with_login()
-    else:
-        setup_pages_no_login()
-        st.rerun()
+    # Define pages
+    pages = [
+        Page("app.py", "Home", "🏠"),
+        Page("pages/settings.py", "User Settings", "⚙️"),
+    ]
+
+    show_pages(pages)
 
 
-def user_authenticated():
-    # TODO make comprehensive with Cookie Support
-    if "current_user" in st.session_state.keys():
-        return True
-    return False
+def show_only_first_page() -> None:
+    """
+    Clear all pages except the first one, if there is more than one page.
+
+    Returns:
+        None
+    """
+    current_pages = get_pages(DEFAULT_PAGE)
+
+    if len(current_pages.keys()) == 1:
+        return
+
+    # Remove all but the first page
+    key, val = list(current_pages.items())[0]
+    current_pages.clear()
+    current_pages[key] = val
+
+    _on_pages_changed.send()
 
 
-def period_picker(label: str = "Select a date",
-                  period: PeriodOptions = PeriodOptions.WEEK,
-                  start_date_limit: datetime.date = None,
-                  end_date_limit: datetime.date = None,
-                  ):
-    if start_date_limit and end_date_limit:
-        selected_date = st.date_input(label, min_value=start_date_limit, max_value=end_date_limit)
-    elif start_date_limit:
-        selected_date = st.date_input(label, min_value=start_date_limit)
-    elif end_date_limit:
-        selected_date = st.date_input(label, max_value=end_date_limit)
-    else:
-        selected_date = st.date_input(label)
+def go_home_if_no_auth_status() -> None:
+    """
+    Redirect to the home page if there is no authentication status in the session state or if the authentication status is False.
 
-    if period == PeriodOptions.WEEK:
-        start_date = selected_date - datetime.timedelta(days=selected_date.weekday())
-        end_date = start_date + datetime.timedelta(days=6)
-        month_year = selected_date.strftime("%B %Y")
-        period_str = f"Week {selected_date.isocalendar()[1]}, {month_year}"
+    Returns:
+        None
+    """
+    if "authentication_status" not in st.session_state:
+        switch_page("home")
 
-    elif period == PeriodOptions.MONTH:
-        start_date = selected_date.replace(day=1)
-        last_day = calendar.monthrange(selected_date.year, selected_date.month)[1]
-        end_date = selected_date.replace(day=last_day)
-        period_str = selected_date.strftime("%B %Y")
+    authentication_status = st.session_state.authentication_status
+    if not authentication_status:
+        switch_page("home")
 
-    elif period == PeriodOptions.YEAR:
-        start_date = datetime.date(selected_date.year, 1, 1)
-        end_date = datetime.date(selected_date.year, 12, 31)
-        period_str = str(selected_date.year)
 
-    else:
-        raise ValueError("Invalid period option")
+def show_sidebar_logout_button():
+    """
+    Puts a logout button on the sidebar if the user is logged in.
+    """
 
-    return start_date, end_date, period_str
+    if "authenticator" not in st.session_state or "authentication_status" not in st.session_state:
+        return
 
-# Further logic can go here, using the week_start and week_end as needed
+    authenticator = st.session_state.authenticator
+    authentication_status = st.session_state.authentication_status
+
+    if authentication_status:
+        authenticator.logout("Logout", "sidebar")
+
+
+def authenticate() -> str:
+    """
+
+    Returns:
+        Username
+    """
+    authenticator = stauth.Authenticate(
+        config["credentials"],
+        config["cookie"]["name"],
+        config["cookie"]["key"],
+        config["cookie"]["expiry_days"],
+    )
+
+    st.session_state.authenticator = authenticator
+
+    name, authentication_status, username = authenticator.login("main")
+
+    if authentication_status is False:
+        show_only_first_page()
+        st.error("Username/password is incorrect")
+        st.stop()
+    elif authentication_status is None:
+        show_only_first_page()
+        try:
+            if authenticator.register_user(pre_authorization=False):
+                st.success('User registered successfully. You can log in now.')
+            with open('config.yaml', 'w') as file:
+                yaml.dump(config, file, default_flow_style=False)
+        except Exception as e:
+            st.error(e)
+        st.stop()
+    return username

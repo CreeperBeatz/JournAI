@@ -1,56 +1,94 @@
 import streamlit as st
-from sqlalchemy.exc import IntegrityError
+from modules.config import PAGE_CONFIG
+import logging
+import modules.streamlit_helper as sthelper
+from modules.chatbot import ChatBot
+from modules.question_manager import save_questions_description
+from modules.conversation_manager import save_conversation, load_conversation, list_conversations
+from model.conversation import Conversation
 
-from database.db_utils import DBManager
-from modules.config_manager import PAGE_CONFIG
-from modules.streamlit_helper import setup_pages_with_login, setup_pages_no_login
-
-# Initialize Streamlit
+logging.basicConfig(level=logging.INFO)
 st.set_page_config(**PAGE_CONFIG)
+username = sthelper.authenticate()
+sthelper.setup_pages()
 
 # Page content
-st.title("Welcome to JournAI")
+st.title("JournAI")
+st.markdown("Welcome to JournAI!\n\n")
 
+# Initialize chatbot
+if "chatbot" not in st.session_state.keys():
+    st.session_state.chatbot = ChatBot(function_descriptions=[save_questions_description])
 
-# Early escape if user is not logged in
-if "current_user" in st.session_state.keys():
-    setup_pages_with_login()
-    exit(0)
+# Initialize chosen conversation
+if "conversation_id" not in st.session_state.keys():
+    st.session_state.conversation_id = None
+
+# Load the newest conversations
+conversation_options = list_conversations(username)
+print(conversation_options)
+
+with st.sidebar:
+    # Create a placeholder for the button
+    new_conversation_placeholder = st.empty()
+
+    # Get index (int) of session state choice
+    options_list = list(conversation_options.keys())
+    default_index = options_list.index(
+        st.session_state.conversation_id) if st.session_state.conversation_id in options_list else None
+
+    st.session_state.conversation_id = st.radio(
+        "Choose a conversation",
+        options=conversation_options,
+        format_func=lambda x: conversation_options[x]['title'],
+        index=default_index,
+    )
+
+    print(st.session_state.conversation_id)
+
+    # use the placeholder to add the "New Conversation" button
+    if new_conversation_placeholder.button("➕ New Conversation"):
+        st.session_state.conversation_id = None
+
+if not st.session_state.conversation_id:
+    # No conversation chosen, begin new conversation
+    st.session_state.current_conversation = Conversation(system_message=st.session_state.chatbot.system_message)
+elif st.session_state.conversation_id != st.session_state.current_conversation.id:
+    # New conversation chosen, load it from files
+    st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
 else:
-    setup_pages_no_login()
+    # No changes
+    pass
 
-menu = ["Login", "Sign Up"]
-choice = st.selectbox("Login or Signup", menu, label_visibility='hidden')
 
-db_manager = DBManager()
+# Display all messages
+for turn in st.session_state.current_conversation.history:
+    role = turn["role"]
+    if role != "system":
+        with st.chat_message(turn["role"]):
+            st.write(turn["content"])
 
-if choice == "Login":
-    st.subheader("Login to an Existing Account")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type='password')
-    if st.button("Login"):
-        login_result = db_manager.verify_login(username, password)
-        if login_result:
-            st.success("Logged In as {}".format(username))
-            st.session_state['current_user'] = username
-            st.session_state['user_id'] = db_manager.get_user_id(username)
-            # Setup pages for successful login
-            setup_pages_with_login()
-        else:
-            st.warning("Incorrect Username/Password")
+user_prompt = st.chat_input()
 
-elif choice == "Sign Up":
-    st.subheader("Create a New Account")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type='password')
-    verify_password = st.text_input("Verify Password", type='password')
+if user_prompt is not None:
+    st.session_state.current_conversation.add_turn("user", user_prompt)
+    with st.chat_message("user"):
+        st.write(user_prompt)
 
-    if st.button("Signup"):
-        if password == verify_password:
-            try:
-                db_manager.add_user(username, password)
-                st.success("You have successfully created an account.")
-            except IntegrityError as e:
-                st.error("User with this username already exists!")
-        else:
-            st.error("Passwords don't match!")
+if st.session_state.current_conversation.history:
+    last_role = st.session_state.current_conversation.history[-1]["role"]
+    if last_role != "assistant" and last_role != "system":
+        with st.chat_message("assistant"):
+            with st.spinner("Loading..."):
+                # TODO Handle Function call (ask user for confirmation)
+                ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
+                st.write(ai_response)
+        st.session_state.current_conversation.add_turn("assistant", ai_response)
+
+    # Save the conversation
+    save_conversation(username, st.session_state.current_conversation)
+    # TODO Get title for conversation
+    # TODO Update sidebar
+
+st.sidebar.divider()
+sthelper.show_sidebar_logout_button()

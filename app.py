@@ -1,7 +1,4 @@
 import streamlit as st
-import streamlit_authenticator as stauth
-import yaml
-
 from modules.config import config, PAGE_CONFIG
 import logging
 import modules.streamlit_helper as sthelper
@@ -10,37 +7,12 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferWindowMemory
 
-from modules.conversations import list_conversations, Conversation, load_conversation, save_conversation
+from modules.file_manager import save_conversation, load_conversation, list_conversations
+from model.conversation import Conversation
 
 logging.basicConfig(level=logging.INFO)
 st.set_page_config(**PAGE_CONFIG)
-
-authenticator = stauth.Authenticate(
-    config["credentials"],
-    config["cookie"]["name"],
-    config["cookie"]["key"],
-    config["cookie"]["expiry_days"],
-)
-
-st.session_state.authenticator = authenticator
-
-name, authentication_status, username = authenticator.login("main")
-
-if authentication_status is False:
-    sthelper.show_only_first_page()
-    st.error("Username/password is incorrect")
-    st.stop()
-elif authentication_status is None:
-    sthelper.show_only_first_page()
-    try:
-        if authenticator.register_user(pre_authorization=False):
-            st.success('User registered successfully. You can log in now.')
-        with open('config.yaml', 'w') as file:
-            yaml.dump(config, file, default_flow_style=False)
-    except Exception as e:
-        st.error(e)
-    st.stop()
-
+username = sthelper.authenticate()
 sthelper.setup_pages()
 
 # TODO Chat
@@ -70,7 +42,6 @@ st.markdown("Welcome to JournAI!\n\n")
 conversation_options = list_conversations(username)
 
 with st.sidebar:
-
     # Create a placeholder for the button
     new_conversation_placeholder = st.empty()
 
@@ -84,8 +55,7 @@ with st.sidebar:
     # use the placeholder to add the "New Conversation" button
     if new_conversation_placeholder.button("➕ New Conversation"):
         chosen_conversation = None
-
-
+    st.warning(chosen_conversation)
 
 if chosen_conversation:
     st.session_state.current_conversation = load_conversation(username, chosen_conversation)
@@ -94,9 +64,9 @@ else:
     st.session_state.current_conversation = Conversation()
 
 # Display all messages
-for turn in st.session_state.current_conversation.turns:
+for turn in st.session_state.current_conversation.history:
     with st.chat_message(turn["role"]):
-        st.write(turn["text"])
+        st.write(turn["content"])
 
 user_prompt = st.chat_input()
 
@@ -105,8 +75,8 @@ if user_prompt is not None:
     with st.chat_message("user"):
         st.write(user_prompt)
 
-if st.session_state.current_conversation.turns:
-    if st.session_state.current_conversation.turns[-1]["role"] != "assistant":
+if st.session_state.current_conversation.history:
+    if st.session_state.current_conversation.history[-1]["role"] != "assistant":
         with st.chat_message("assistant"):
             with st.spinner("Loading..."):
                 ai_response = llm_chain.predict(question=user_prompt)

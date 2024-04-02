@@ -1,51 +1,9 @@
-import os
-from modules.config import CHATS_FOLDER
 import json
-import uuid
+import os
 from datetime import datetime
-from typing import Dict, List, Tuple
 
-
-class Conversation:
-    def __init__(self):
-        self.conversation_id = self._generate_uuid()
-        self.title = "New Conversation"
-        self.turns: List[Dict[str, str]] = []
-        self.metadata: Dict[str, any] = {}
-        self.last_modified: datetime = datetime.now()
-
-    @staticmethod
-    def _generate_uuid() -> str:
-        """Generates a unique identifier based on the current timestamp."""
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        unique_id = uuid.uuid5(uuid.NAMESPACE_DNS, timestamp)
-        return str(unique_id)
-
-    def add_turn(self, role: str, text: str):
-        self.turns.append({"role": role, "text": text})
-        self.last_modified: datetime = datetime.now()
-
-    def set_metadata(self, **kwargs):
-        self.metadata = kwargs
-
-    def to_json(self) -> str:
-        return json.dumps({
-            "conversation_id": self.conversation_id,
-            "title": self.title,
-            "turns": self.turns,
-            "metadata": self.metadata,
-            "last_modified": self.last_modified.strftime('%Y%m%d%H%M%S'),
-        }, indent=4)
-
-    @classmethod
-    def from_json(cls, data: dict):
-        conversation = cls()
-        conversation.conversation_id = data['conversation_id']
-        conversation.title = data['title']
-        conversation.turns = data['turns']
-        conversation.metadata = data['metadata']
-        conversation.last_modified = datetime.strptime(data['last_modified'], '%Y%m%d%H%M%S')
-        return conversation
+from model.conversation import Conversation
+from modules.config import CHATS_FOLDER
 
 
 def save_conversation(username: str, conversation: Conversation):
@@ -119,4 +77,3 @@ def list_conversations(username: str) -> dict[str, dict[str, str | datetime]]:
     ))
 
     return sorted_conversations
-

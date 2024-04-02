@@ -7,11 +7,16 @@ from modules.config import CHATS_FOLDER
 
 
 def save_conversation(username: str, conversation: Conversation):
+    # Check if there are any messages in the conversation
+    if len(conversation.history) < 2:
+        # 1 message means only system message, or no AI response
+        return
+
     user_dir = os.path.join(CHATS_FOLDER, username)
     os.makedirs(user_dir, exist_ok=True)
     file_path = os.path.join(
         user_dir,
-        f"{conversation.conversation_id}_"
+        f"{conversation.id}_"
         f"{conversation.title.replace('_', ' ')}"
         f".json"
     )

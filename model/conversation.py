@@ -5,12 +5,20 @@ from typing import List, Dict
 
 
 class Conversation:
-    def __init__(self):
-        self.conversation_id = self._generate_uuid()
+    def __init__(self, system_message: str = None):
+        """
+
+        Args:
+            system_message:
+        """
+        self.id = self._generate_uuid()
         self.title = "New Conversation"
         self.history: List[Dict[str, str]] = []
         self.metadata: Dict[str, any] = {}
         self.last_modified: datetime = datetime.now()
+
+        if system_message and type(system_message) is str:
+            self.history.append({"role": "system", "content": system_message})
 
     @staticmethod
     def _generate_uuid() -> str:
@@ -28,7 +36,7 @@ class Conversation:
 
     def to_json(self) -> str:
         return json.dumps({
-            "conversation_id": self.conversation_id,
+            "conversation_id": self.id,
             "title": self.title,
             "history": self.history,
             "metadata": self.metadata,
@@ -38,7 +46,7 @@ class Conversation:
     @classmethod
     def from_json(cls, data: dict):
         conversation = cls()
-        conversation.conversation_id = data['conversation_id']
+        conversation.id = data['conversation_id']
         conversation.title = data['title']
         conversation.history = data['history']
         conversation.metadata = data['metadata']

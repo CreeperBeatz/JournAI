@@ -7,7 +7,7 @@ from modules.config import CHATS_FOLDER
 
 
 def save_conversation(username: str, conversation: Conversation):
-    # Check if there are any messages in the conversation
+    # Crude way to check if there are any messages in the conversation
     if len(conversation.history) < 2:
         # 1 message means only system message, or no AI response
         return

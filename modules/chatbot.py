@@ -36,6 +36,7 @@ class ChatBot:
                 messages=conversation.history,
                 functions=self.function_descriptions
             )
+            # TODO Handle function call
             msg = response.choices[0].message.content
             return msg
         else:

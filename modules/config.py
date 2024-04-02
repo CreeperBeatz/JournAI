@@ -7,3 +7,5 @@ with open("config.yaml") as file:
 
 PAGE_CONFIG = {"page_title": "JournAI", "page_icon": "logo.png"}
 CHATS_FOLDER = "chats"
+QUESTIONS_FOLDER = "questions"
+ANSWERS_FOLDER = "answers"

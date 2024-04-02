@@ -2,14 +2,16 @@ import openai
 from model.conversation import Conversation
 from modules.config import config
 
-system_message = ("You are a friendly AI assistant. You are currently "
-                  "having a conversation with a human.")
-
 
 class ChatBot:
 
-    def __init__(self):
+    def __init__(self, function_descriptions):
         self.client = openai.OpenAI(api_key=config["openai"]["token"])
+
+        self.system_message = ("You are a friendly AI assistant. You are currently "
+                               "having a conversation with a human.")
+
+        self.function_descriptions = function_descriptions
 
     def chat(self, conversation: Conversation) -> str:
         """
@@ -31,9 +33,18 @@ class ChatBot:
 
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=conversation.history
+                messages=conversation.history,
+                functions=self.function_descriptions
             )
             msg = response.choices[0].message.content
             return msg
         else:
             return "Waiting on human input."
+
+    def get_summary(self, conversation: Conversation) -> str:
+        # TODO
+        pass
+
+    def get_title(self, conversation: Conversation) -> str:
+        # TODO
+        pass

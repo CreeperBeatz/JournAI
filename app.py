@@ -18,7 +18,7 @@ st.markdown("Welcome to JournAI!\n\n")
 
 # Initialize chatbot
 if "chatbot" not in st.session_state.keys():
-    st.session_state.chatbot = ChatBot(function_descriptions=save_questions_description)
+    st.session_state.chatbot = ChatBot(function_descriptions=[save_questions_description])
 
 # Initialize chosen conversation
 if "conversation_id" not in st.session_state.keys():

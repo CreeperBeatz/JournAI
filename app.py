@@ -5,7 +5,9 @@ import modules.streamlit_helper as sthelper
 from modules.chatbot import ChatBot
 from modules.question_manager import save_questions_description
 from modules.conversation_manager import save_conversation, load_conversation, list_conversations
+import modules.question_manager as ques_manager
 from model.conversation import Conversation
+import json
 
 logging.basicConfig(level=logging.INFO)
 st.set_page_config(**PAGE_CONFIG)
@@ -26,7 +28,6 @@ if "conversation_id" not in st.session_state.keys():
 
 # Load the newest conversations
 conversation_options = list_conversations(username)
-print(conversation_options)
 
 with st.sidebar:
     # Create a placeholder for the button
@@ -44,8 +45,6 @@ with st.sidebar:
         index=default_index,
     )
 
-    print(st.session_state.conversation_id)
-
     # use the placeholder to add the "New Conversation" button
     if new_conversation_placeholder.button("➕ New Conversation"):
         st.session_state.conversation_id = None
@@ -56,9 +55,6 @@ if not st.session_state.conversation_id:
 elif st.session_state.conversation_id != st.session_state.current_conversation.id:
     # New conversation chosen, load it from files
     st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
-else:
-    # No changes
-    pass
 
 
 # Display all messages
@@ -75,20 +71,41 @@ if user_prompt is not None:
     with st.chat_message("user"):
         st.write(user_prompt)
 
-if st.session_state.current_conversation.history:
-    last_role = st.session_state.current_conversation.history[-1]["role"]
-    if last_role != "assistant" and last_role != "system":
-        with st.chat_message("assistant"):
-            with st.spinner("Loading..."):
-                # TODO Handle Function call (ask user for confirmation)
-                ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
-                st.write(ai_response)
-        st.session_state.current_conversation.add_turn("assistant", ai_response)
+if not st.session_state.current_conversation.history:
+    st.stop()
 
-    # Save the conversation
-    save_conversation(username, st.session_state.current_conversation)
-    # TODO Get title for conversation
-    # TODO Update sidebar
+last_role = st.session_state.current_conversation.history[-1]["role"]
+if last_role != "assistant" and last_role != "system":
+    with st.chat_message("assistant"):
+
+        # Awaiting anwer from user for destructive function call
+        if "questions" in st.session_state.keys() and st.session_state.questions:
+            if st.button("Do you want to save questions?"):
+                ques_manager.save_questions("test", st.session_state.questions)
+                # FIXME this function role doesnt work
+                st.session_state.current_conversation.add_turn("function", "Succesfully saved.")
+            st.session_state.questions = None
+
+
+        with st.spinner("Loading..."):
+            ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
+
+            # if function call for saving questions
+            if ai_response.function_call:
+                if ai_response.function_call.name == "save_questions":
+                    st.warning(ai_response.function_call.arguments)
+                    st.session_state.questions = json.loads(ai_response.function_call.arguments)['questions']
+
+            if ai_response.content:
+                st.write(ai_response.content)
+                st.session_state.current_conversation.add_turn("assistant", ai_response.content)
+
+
+
+# Save the conversation
+save_conversation(username, st.session_state.current_conversation)
+# TODO Get title for conversation
+# TODO Update sidebar
 
 st.sidebar.divider()
 sthelper.show_sidebar_logout_button()

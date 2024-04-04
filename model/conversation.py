@@ -27,8 +27,11 @@ class Conversation:
         unique_id = uuid.uuid5(uuid.NAMESPACE_DNS, timestamp)
         return str(unique_id)
 
-    def add_turn(self, role: str, content: str):
-        self.history.append({"role": role, "content": content})
+    def add_turn(self, role: str, content: str, name: str = None):
+        if name:
+            self.history.append({"role": role, "content": content, "name": name})
+        else:
+            self.history.append({"role": role, "content": content})
         self.last_modified: datetime = datetime.now()
 
     def set_metadata(self, **kwargs):

@@ -117,7 +117,8 @@ if last_role != "assistant" and last_role != "system":
 
 if st.session_state.current_conversation.title == "New Conversation":
     title = st.session_state.chatbot.get_title(st.session_state.current_conversation)
-    print(title)
+    st.session_state.current_conversation.title = title
+    st.rerun()  # TODO test if it doesn't break something
 
 # Save the conversation
 save_conversation(username, st.session_state.current_conversation)

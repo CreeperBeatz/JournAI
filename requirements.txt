@@ -9,3 +9,4 @@ langchain-community==0.0.29
 streamlit_authenticator==0.3.2
 st_pages==0.4.5
 streamlit-extras==0.4.0
+chardet==5.2.0

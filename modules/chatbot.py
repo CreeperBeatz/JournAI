@@ -47,13 +47,13 @@ class ChatBot:
             [f"{message['role']}: {message['content']}" for message in conversation.history])
 
         # Call the OpenAI API to generate a summary
-        response = self.client.completions.create(
+        response = self.client.chat.completions.create(
             model="gpt-3.5-turbo",
-            prompt=f"Summarize this conversation:\n\n{conversation_text}",
+            messages=[{"role": "user", "content": f"Provide a summary for this conversation:\n\n{conversation_text}"}],
             max_tokens=max_tokens,
         )
 
-        return response.choices[0].text.strip()
+        return response.choices[0].message.content
 
     def get_title(self, conversation, max_tokens: int = 10):
         # Prepare the conversation history as a single string
@@ -61,11 +61,9 @@ class ChatBot:
             [f"{message['role']}: {message['content']}" for message in conversation.history])
 
         # Call the OpenAI API to generate a summary
-        response = self.client.completions.create(
+        response = self.client.chat.completions.create(
             model="gpt-3.5-turbo",
-            prompt=f"Summarize this conversation:\n\n{conversation_text}",
+            messages=[{"role": "user", "content": f"Provide a title for this conversation:\n\n{conversation_text}"}],
             max_tokens=max_tokens,
-            temperature=0.7,
         )
-
-        return response.choices[0].text.strip()
+        return response.choices[0].message.content

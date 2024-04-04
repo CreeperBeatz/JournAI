@@ -30,13 +30,14 @@ if "conversation_id" not in st.session_state.keys():
 conversation_options = list_conversations(username)
 
 with st.sidebar:
-    # Create a placeholder for the button
-    new_conversation_placeholder = st.empty()
-
-    # Get index (int) of session state choice
-    options_list = list(conversation_options.keys())
-    default_index = options_list.index(
-        st.session_state.conversation_id) if st.session_state.conversation_id in options_list else None
+    if st.button("➕ New Conversation"):
+        default_index = None
+        st.session_state.conversation_id = None
+    else:
+        # Get index (int) of session state choice
+        options_list = list(conversation_options.keys())
+        default_index = options_list.index(
+            st.session_state.conversation_id) if st.session_state.conversation_id in options_list else None
 
     st.session_state.conversation_id = st.radio(
         "Choose a conversation",
@@ -45,17 +46,15 @@ with st.sidebar:
         index=default_index,
     )
 
-    # use the placeholder to add the "New Conversation" button
-    if new_conversation_placeholder.button("➕ New Conversation"):
-        st.session_state.conversation_id = None
-
 if not st.session_state.conversation_id:
     # No conversation chosen, begin new conversation
-    st.session_state.current_conversation = Conversation(system_message=st.session_state.chatbot.system_message)
+    st.session_state.current_conversation = Conversation(
+        system_message=st.session_state.chatbot.system_message)
+    st.session_state.questions = None
 elif st.session_state.conversation_id != st.session_state.current_conversation.id:
     # New conversation chosen, load it from files
     st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
-
+    st.session_state.questions = None
 
 # Display all messages
 for turn in st.session_state.current_conversation.history:
@@ -65,7 +64,6 @@ for turn in st.session_state.current_conversation.history:
             st.write(turn["content"])
 
 user_prompt = st.chat_input()
-
 if user_prompt is not None:
     st.session_state.current_conversation.add_turn("user", user_prompt)
     with st.chat_message("user"):
@@ -78,29 +76,48 @@ last_role = st.session_state.current_conversation.history[-1]["role"]
 if last_role != "assistant" and last_role != "system":
     with st.chat_message("assistant"):
 
-        # Awaiting anwer from user for destructive function call
+        # Awaiting answer from user for destructive function call
         if "questions" in st.session_state.keys() and st.session_state.questions:
-            if st.button("Do you want to save questions?"):
-                ques_manager.save_questions("test", st.session_state.questions)
-                # FIXME this function role doesnt work
-                st.session_state.current_conversation.add_turn("function", "Succesfully saved.")
-            st.session_state.questions = None
+            multiline_questions = '\n * '.join(st.session_state.questions)
+            ai_answer = f"Do you want to save these as your daily questions?\n * {multiline_questions}"
+            st.write(ai_answer)
+            col1, col2, _ = st.columns([1, 1, 5])
+            with col1:
+                if st.button("Yes", type="primary", use_container_width=True):
+                    ques_manager.save_questions("test", st.session_state.questions)
+                    st.session_state.current_conversation.add_turn("assistant", ai_answer)
+                    st.session_state.current_conversation.add_turn("user", "yes")
+                    st.session_state.current_conversation.add_turn(
+                        "function",
+                        "Successfully saved.",
+                        "save_questions"
+                    )
+                    st.session_state.questions = None
+            with col2:
+                if st.button("No", use_container_width=True):
+                    st.session_state.current_conversation.add_turn("assistant", ai_answer)
+                    st.session_state.current_conversation.add_turn("user", "No")
+                    st.session_state.questions = None
+        elif "answers" in st.session_state.keys() and st.session_state.current_conversation:
+            pass
+        else:
+            with st.spinner("Loading..."):
+                ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
 
+                # if function call for saving questions
+                if ai_response.function_call:
+                    if ai_response.function_call.name == "save_questions":
+                        st.session_state.questions = json.loads(ai_response.function_call.arguments)[
+                            'questions']
+                        st.rerun()
 
-        with st.spinner("Loading..."):
-            ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
+                if ai_response.content:
+                    st.write(ai_response.content)
+                    st.session_state.current_conversation.add_turn("assistant", ai_response.content)
 
-            # if function call for saving questions
-            if ai_response.function_call:
-                if ai_response.function_call.name == "save_questions":
-                    st.warning(ai_response.function_call.arguments)
-                    st.session_state.questions = json.loads(ai_response.function_call.arguments)['questions']
-
-            if ai_response.content:
-                st.write(ai_response.content)
-                st.session_state.current_conversation.add_turn("assistant", ai_response.content)
-
-
+if st.session_state.current_conversation.title == "New Conversation":
+    title = st.session_state.chatbot.get_title(st.session_state.current_conversation)
+    print(title)
 
 # Save the conversation
 save_conversation(username, st.session_state.current_conversation)

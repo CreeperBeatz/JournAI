@@ -75,7 +75,7 @@ def authenticate() -> str:
     """
 
     Returns:
-        Username
+        Username, name
     """
     authenticator = stauth.Authenticate(
         config["credentials"],
@@ -102,4 +102,4 @@ def authenticate() -> str:
         except Exception as e:
             st.error(e)
         st.stop()
-    return username
+    return username, name

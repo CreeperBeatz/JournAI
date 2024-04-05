@@ -1,3 +1,5 @@
+from typing import List
+
 import openai
 from openai.types.chat import ChatCompletionMessage
 
@@ -7,12 +9,14 @@ from modules.config import config
 
 class ChatBot:
 
-    def __init__(self, function_descriptions):
+    def __init__(self, function_descriptions, user_questions: List[str] = None, name: str = None):
         self.client = openai.OpenAI(api_key=config["openai"]["token"])
 
-        self.system_message = ("You are a friendly AI assistant. You are currently "
-                               "having a conversation with a human.")
-
+        multiline_questions = '\n'.join(user_questions) if user_questions else ""
+        self.system_message = (f"You are a friendly AI assistant. You are currently "
+                               f"having a conversation with a human. The human is called {name}, "
+                               f"The user's daily questions are as follows:\n"
+                               f"{multiline_questions}\n")
         self.function_descriptions = function_descriptions
 
     def chat(self, conversation: Conversation) -> ChatCompletionMessage:
@@ -22,6 +26,8 @@ class ChatBot:
 
         Args:
             conversation (Conversation):
+            user_questions (List[str]): List of strings, representing the daily questions for the user.
+                Defaults to None
 
         Returns:
             ChatCompletionMessage
@@ -36,7 +42,8 @@ class ChatBot:
         response = self.client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=conversation.history,
-            functions=self.function_descriptions
+            functions=self.function_descriptions,
+
         )
         msg = response.choices[0].message
         return msg

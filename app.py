@@ -11,7 +11,7 @@ import json
 
 logging.basicConfig(level=logging.INFO)
 st.set_page_config(**PAGE_CONFIG)
-username = sthelper.authenticate()
+username, name = sthelper.authenticate()
 sthelper.setup_pages()
 
 # Page content
@@ -19,8 +19,8 @@ st.title("JournAI")
 st.markdown("Welcome to JournAI!\n\n")
 
 # Initialize chatbot
-if "chatbot" not in st.session_state.keys():
-    st.session_state.chatbot = ChatBot(function_descriptions=[save_questions_description])
+#if "chatbot" not in st.session_state.keys():
+#    st.session_state.chatbot = ChatBot(function_descriptions=[save_questions_description])
 
 # Initialize chosen conversation
 if "conversation_id" not in st.session_state.keys():
@@ -48,12 +48,18 @@ with st.sidebar:
 
 if not st.session_state.conversation_id:
     # No conversation chosen, begin new conversation
+    user_questions = ques_manager.load_questions(username)
+    st.session_state.chatbot = ChatBot([save_questions_description], user_questions, name)
     st.session_state.current_conversation = Conversation(
         system_message=st.session_state.chatbot.system_message)
+    st.session_state.conversation_id = st.session_state.current_conversation.id
     st.session_state.questions = None
 elif st.session_state.conversation_id != st.session_state.current_conversation.id:
     # New conversation chosen, load it from files
+    user_questions = ques_manager.load_questions(username)
+    st.session_state.chatbot = ChatBot([save_questions_description], user_questions, name)
     st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
+    st.session_state.conversation_id = st.session_state.current_conversation.id
     st.session_state.questions = None
 
 # Display all messages
@@ -115,10 +121,9 @@ if last_role != "assistant" and last_role != "system":
                     st.write(ai_response.content)
                     st.session_state.current_conversation.add_turn("assistant", ai_response.content)
 
-if st.session_state.current_conversation.title == "New Conversation":
+if st.session_state.current_conversation.title == "New Conversation" and len(st.session_state.current_conversation.history) > 1:
     title = st.session_state.chatbot.get_title(st.session_state.current_conversation)
     st.session_state.current_conversation.title = title
-    st.rerun()  # TODO test if it doesn't break something
 
 # Save the conversation
 save_conversation(username, st.session_state.current_conversation)

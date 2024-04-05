@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 from datetime import datetime
@@ -14,6 +15,12 @@ def save_conversation(username: str, conversation: Conversation):
 
     user_dir = os.path.join(CHATS_FOLDER, username)
     os.makedirs(user_dir, exist_ok=True)
+
+    # Delete any previous conversation files
+    file_pattern = os.path.join(user_dir, f"{conversation.id}_*.json")
+    for file in glob.glob(file_pattern):
+        os.remove(file)
+
     file_path = os.path.join(
         user_dir,
         f"{conversation.id}_"

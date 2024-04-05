@@ -3,7 +3,6 @@ from modules.config import PAGE_CONFIG
 import logging
 import modules.streamlit_helper as sthelper
 from modules.chatbot import ChatBot
-from modules.question_manager import save_questions_description
 from modules.conversation_manager import save_conversation, load_conversation, list_conversations
 import modules.question_manager as ques_manager
 from model.conversation import Conversation
@@ -14,13 +13,12 @@ st.set_page_config(**PAGE_CONFIG)
 username, name = sthelper.authenticate()
 sthelper.setup_pages()
 
+# Some functionalities need the script to rerun after reaching EoT (ex. multi-step replies)
+RERUN_AT_END = False
+
 # Page content
 st.title("JournAI")
 st.markdown("Welcome to JournAI!\n\n")
-
-# Initialize chatbot
-#if "chatbot" not in st.session_state.keys():
-#    st.session_state.chatbot = ChatBot(function_descriptions=[save_questions_description])
 
 # Initialize chosen conversation
 if "conversation_id" not in st.session_state.keys():
@@ -48,16 +46,16 @@ with st.sidebar:
 
 if not st.session_state.conversation_id:
     # No conversation chosen, begin new conversation
-    user_questions = ques_manager.load_questions(username)
-    st.session_state.chatbot = ChatBot([save_questions_description], user_questions, name)
+    user_questions = ques_manager.get_questions(username)
+    st.session_state.chatbot = ChatBot(name)
     st.session_state.current_conversation = Conversation(
         system_message=st.session_state.chatbot.system_message)
     st.session_state.conversation_id = st.session_state.current_conversation.id
     st.session_state.questions = None
 elif st.session_state.conversation_id != st.session_state.current_conversation.id:
     # New conversation chosen, load it from files
-    user_questions = ques_manager.load_questions(username)
-    st.session_state.chatbot = ChatBot([save_questions_description], user_questions, name)
+    user_questions = ques_manager.get_questions(username)
+    st.session_state.chatbot = ChatBot(name)
     st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
     st.session_state.conversation_id = st.session_state.current_conversation.id
     st.session_state.questions = None
@@ -74,9 +72,6 @@ if user_prompt is not None:
     st.session_state.current_conversation.add_turn("user", user_prompt)
     with st.chat_message("user"):
         st.write(user_prompt)
-
-if not st.session_state.current_conversation.history:
-    st.stop()
 
 last_role = st.session_state.current_conversation.history[-1]["role"]
 if last_role != "assistant" and last_role != "system":
@@ -110,25 +105,43 @@ if last_role != "assistant" and last_role != "system":
             with st.spinner("Loading..."):
                 ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
 
-                # if function call for saving questions
+                # if function call
                 if ai_response.function_call:
-                    if ai_response.function_call.name == "save_questions":
-                        st.session_state.questions = json.loads(ai_response.function_call.arguments)[
-                            'questions']
-                        st.rerun()
+                    match ai_response.function_call.name:
+                        case "save_questions":
+                            st.session_state.questions = json.loads(ai_response.function_call.arguments)[
+                                'questions']
+                            RERUN_AT_END = True
+                        case "get_questions":
+                            st.session_state.current_conversation.add_turn(
+                                role="function",
+                                content=", ".join(ques_manager.get_questions(username)),
+                                name="get_questions"
+                            )
+                            RERUN_AT_END = True
 
+                # if message present
                 if ai_response.content:
                     st.write(ai_response.content)
                     st.session_state.current_conversation.add_turn("assistant", ai_response.content)
 
-if st.session_state.current_conversation.title == "New Conversation" and len(st.session_state.current_conversation.history) > 1:
+# Get title for conversation
+if st.session_state.current_conversation.title == "New Conversation" and len(
+        st.session_state.current_conversation.history) > 1:
     title = st.session_state.chatbot.get_title(st.session_state.current_conversation)
     st.session_state.current_conversation.title = title
 
+# TODO Get summary for the conversation
+
+# TODO append to RAG
+
 # Save the conversation
 save_conversation(username, st.session_state.current_conversation)
-# TODO Get title for conversation
+
 # TODO Update sidebar
 
 st.sidebar.divider()
 sthelper.show_sidebar_logout_button()
+
+if RERUN_AT_END:
+    st.rerun()

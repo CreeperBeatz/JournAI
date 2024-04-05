@@ -5,6 +5,7 @@ from datetime import datetime
 
 from model.conversation import Conversation
 from modules.config import CHATS_FOLDER
+from modules.utilities import sanitize_filename
 
 
 def save_conversation(username: str, conversation: Conversation):
@@ -21,10 +22,13 @@ def save_conversation(username: str, conversation: Conversation):
     for file in glob.glob(file_pattern):
         os.remove(file)
 
+    # Sanitize conversation title
+    title = sanitize_filename(conversation.title)
+
     file_path = os.path.join(
         user_dir,
         f"{conversation.id}_"
-        f"{conversation.title.replace('_', ' ')}"
+        f"{title}"
         f".json"
     )
     with open(file_path, 'w') as file:

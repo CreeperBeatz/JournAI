@@ -67,8 +67,7 @@ class ChatBot:
 
     def get_title(self, conversation, max_tokens: int = 10):
         # Prepare the conversation history as a single string
-        conversation_text = "\n".join(
-            [f"{message['role']}: {message['content']}" for message in conversation.history])
+        conversation_text = str(conversation.history)
 
         # Call the OpenAI API to generate a summary
         response = self.client.chat.completions.create(

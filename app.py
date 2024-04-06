@@ -1,3 +1,5 @@
+import json
+
 import streamlit as st
 from modules.config import PAGE_CONFIG
 import logging
@@ -6,7 +8,6 @@ from modules.chatbot import ChatBot
 from modules.conversation_manager import save_conversation, load_conversation, list_conversations
 import modules.question_manager as ques_manager
 from model.conversation import Conversation
-import json
 
 logging.basicConfig(level=logging.INFO)
 st.set_page_config(**PAGE_CONFIG)
@@ -65,67 +66,78 @@ for turn in st.session_state.current_conversation.history:
     role = turn["role"]
     if role != "system":
         with st.chat_message(turn["role"]):
-            st.write(turn["content"])
+            # FIXME visualization of messages with no content
+            if turn.get("content"):
+                st.write(turn["content"])
+            else:
+                st.write("*Calling an internal functionality*")
 
 user_prompt = st.chat_input()
 if user_prompt is not None:
-    st.session_state.current_conversation.add_human_message("user", user_prompt)
+    st.session_state.current_conversation.add_human_message(user_prompt)
     with st.chat_message("user"):
         st.write(user_prompt)
 
 last_role = st.session_state.current_conversation.history[-1]["role"]
+
+# Function call answer
+if st.session_state.current_conversation.history[-1].get("function_call"):
+    with st.chat_message("function"):
+        with st.spinner("Loading..."):
+            match st.session_state.current_conversation.history[-1]["function_call"]["name"]:
+                case "get_questions":
+                    questions = ques_manager.get_questions(username)
+                    st.write(questions)
+                    st.session_state.current_conversation.add_function_response(
+                        name="get_questions",
+                        content=str(questions)
+                    )
+                    RERUN_AT_END = True
+                case "save_questions":
+                    questions_str = st.session_state.current_conversation.history[-1]["function_call"]["arguments"]
+                    questions_list = json.loads(questions_str)["questions"]
+
+                    multiline_questions = '\n * '.join(questions_list)
+                    confirmation_message = f"Do you want to save these as your daily questions?\n * {multiline_questions}"
+
+                    st.write(confirmation_message)
+                    col1, col2, _ = st.columns([1, 1, 5])
+                    with col1:
+                        if st.button("Yes", type="primary", use_container_width=True):
+                            ques_manager.save_questions(username, questions_list)
+                            st.session_state.current_conversation.add_function_response(
+                                name="get_questions",
+                                content="Saved successfully!"
+                            )
+                    with col2:
+                        if st.button("No", use_container_width=False):
+                            st.session_state.current_conversation.add_function_response(
+                                name="get_questions",
+                                content="Questions not saved: User rejected."
+                            )
+                case "get_answers":
+                    pass
+                    RERUN_AT_END = True
+                case "save_answer":
+                    pass
+                case _:
+                    print("Critical error: function not recognized")
+
+# Turn for AI assistant
 if last_role != "assistant" and last_role != "system":
     with st.chat_message("assistant"):
+        with st.spinner("Loading..."):
+            ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
+            st.session_state.current_conversation.add_ai_message(ai_response)
 
-        # Awaiting answer from user for destructive function call
-        if "questions" in st.session_state.keys() and st.session_state.questions:
-            multiline_questions = '\n * '.join(st.session_state.questions)
-            ai_answer = f"Do you want to save these as your daily questions?\n * {multiline_questions}"
-            st.write(ai_answer)
-            col1, col2, _ = st.columns([1, 1, 5])
-            with col1:
-                if st.button("Yes", type="primary", use_container_width=True):
-                    ques_manager.save_questions("test", st.session_state.questions)
-                    st.session_state.current_conversation.add_ai_message(ai_answer)
-                    st.session_state.current_conversation.add_human_message("yes")
-                    st.session_state.current_conversation.add_function_response(
-                        name="save_questions",
-                        content="Successfully saved."
-                    )
-                    st.session_state.questions = None
-            with col2:
-                if st.button("No", use_container_width=True):
-                    st.session_state.current_conversation.add_human_message("assistant", ai_answer)
-                    st.session_state.current_conversation.add_human_message("user", "No")
-                    st.session_state.questions = None
-        elif "answers" in st.session_state.keys() and st.session_state.current_conversation:
-            pass
-        else:
-            with st.spinner("Loading..."):
-                ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
-                st.session_state.current_conversation.add_ai_message(ai_response)
+            # if function call
+            if ai_response.function_call:
+                if ai_response.function_call.name in ["save_questions", "save_answer"]:
+                    RERUN_AT_END = True
 
-                # if function call
-                if ai_response.function_call:
-                    match ai_response.function_call.name:
-                        case "save_questions":
-                            st.session_state.questions = json.loads(ai_response.function_call.arguments)[
-                                'questions']
-                            RERUN_AT_END = True
-                        case "get_questions":
-                            st.session_state.current_conversation.add_function_response(
-                                content=", ".join(ques_manager.get_questions(username)),
-                                name="get_questions"
-                            )
-                            RERUN_AT_END = True
-                        case "save_question":
-                            pass
-                        case "get_questions":
-                            pass
-
-                # if message present
-                if ai_response.content:
-                    st.write(ai_response.content)
+            # if message present
+            if ai_response.content:
+                st.write(ai_response.content)
 
 
 # Get title for conversation

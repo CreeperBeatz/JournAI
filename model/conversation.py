@@ -17,10 +17,6 @@ class Conversation:
         self.metadata: Dict[str, any] = {}
         self.last_modified: datetime = datetime.now()
 
-        # When calling destructive functions (ex. write over files)
-        self.needs_confirmation = False
-        self.action_confirmed = False
-
         if system_message and type(system_message) is str:
             self.history.append({"role": "system", "content": system_message})
 

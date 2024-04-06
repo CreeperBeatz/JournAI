@@ -1,16 +1,17 @@
+from datetime import datetime
 from typing import List
 import openai
 from openai.types.chat import ChatCompletionMessage
 from modules.question_manager import save_questions_description, get_questions_description
+from modules.answer_manager import get_answers_description, save_answer_description
 from model.conversation import Conversation
 from modules.config import config, CHAT_MODEL
 
 function_descriptions = [
     save_questions_description,
     get_questions_description,
-#    set_daily_answers,
-#    get_daily_answers,
-#    get_summaries,
+    get_answers_description,
+    save_answer_description
 ]
 
 
@@ -19,8 +20,10 @@ class ChatBot:
     def __init__(self, name_of_user: str = None):
         self.client = openai.OpenAI(api_key=config["openai"]["token"])
 
-        self.system_message = (f"You are a friendly AI assistant. You are currently "
-                               f"having a conversation with a human.")
+        self.system_message = (f"You are a friendly AI assistant specializing in psychological help and "
+                               f"improvement. You are currently "
+                               f"having a conversation with a human called {name_of_user}. "
+                               f"The current date is {datetime.now().strftime('%Y-%m-%d')} (YYYY-MM-DD)")
         self.function_descriptions = function_descriptions
 
     def chat(self, conversation: Conversation) -> ChatCompletionMessage:

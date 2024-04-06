@@ -100,6 +100,9 @@ def get_answers(username: str, from_date: str, to_date: str) -> Dict[str, Dict[s
 
     Returns:
         Dict[str, Dict[str, str]]: A dictionary with dates as keys and dictionaries of question-answer pairs as values.
+
+    Raises:
+        ValueError: Dates are not in the correct format
     """
     answers = {}
     dir_path = f"./answers/{username}"

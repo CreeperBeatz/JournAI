@@ -6,7 +6,8 @@ import logging
 import modules.streamlit_helper as sthelper
 from modules.chatbot import ChatBot
 from modules.conversation_manager import save_conversation, load_conversation, list_conversations
-import modules.question_manager as ques_manager
+import modules.question_manager as question_manager
+import modules.answer_manager as answer_manager
 from model.conversation import Conversation
 
 logging.basicConfig(level=logging.INFO)
@@ -47,7 +48,7 @@ with st.sidebar:
 
 if not st.session_state.conversation_id:
     # No conversation chosen, begin new conversation
-    user_questions = ques_manager.get_questions(username)
+    user_questions = question_manager.get_questions(username)
     st.session_state.chatbot = ChatBot(name)
     st.session_state.current_conversation = Conversation(
         system_message=st.session_state.chatbot.system_message)
@@ -55,7 +56,7 @@ if not st.session_state.conversation_id:
     st.session_state.questions = None
 elif st.session_state.conversation_id != st.session_state.current_conversation.id:
     # New conversation chosen, load it from files
-    user_questions = ques_manager.get_questions(username)
+    user_questions = question_manager.get_questions(username)
     st.session_state.chatbot = ChatBot(name)
     st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
     st.session_state.conversation_id = st.session_state.current_conversation.id
@@ -84,44 +85,77 @@ last_role = st.session_state.current_conversation.history[-1]["role"]
 if st.session_state.current_conversation.history[-1].get("function_call"):
     with st.chat_message("function"):
         with st.spinner("Loading..."):
-            match st.session_state.current_conversation.history[-1]["function_call"]["name"]:
-                case "get_questions":
-                    questions = ques_manager.get_questions(username)
-                    st.write(questions)
-                    st.session_state.current_conversation.add_function_response(
-                        name="get_questions",
-                        content=str(questions)
-                    )
-                    RERUN_AT_END = True
-                case "save_questions":
-                    questions_str = st.session_state.current_conversation.history[-1]["function_call"]["arguments"]
-                    questions_list = json.loads(questions_str)["questions"]
+            try:
+                arguments = json.loads(st.session_state.current_conversation.history[-1]["function_call"]["arguments"])
+                match st.session_state.current_conversation.history[-1]["function_call"]["name"]:
+                    case "get_questions":
+                        questions = question_manager.get_questions(username)
+                        st.write(questions)
+                        st.session_state.current_conversation.add_function_response(
+                            name="get_questions",
+                            content=str(questions)
+                        )
+                        RERUN_AT_END = True
+                    case "save_questions":
+                        # region save questions
+                        questions_list = json.loads(arguments)["questions"]
 
-                    multiline_questions = '\n * '.join(questions_list)
-                    confirmation_message = f"Do you want to save these as your daily questions?\n * {multiline_questions}"
+                        multiline_questions = '\n * '.join(questions_list)
+                        confirmation_message = f"Do you want to save these as your daily questions?\n * {multiline_questions}"
 
-                    st.write(confirmation_message)
-                    col1, col2, _ = st.columns([1, 1, 5])
-                    with col1:
-                        if st.button("Yes", type="primary", use_container_width=True):
-                            ques_manager.save_questions(username, questions_list)
-                            st.session_state.current_conversation.add_function_response(
-                                name="get_questions",
-                                content="Saved successfully!"
-                            )
-                    with col2:
-                        if st.button("No", use_container_width=False):
-                            st.session_state.current_conversation.add_function_response(
-                                name="get_questions",
-                                content="Questions not saved: User rejected."
-                            )
-                case "get_answers":
-                    pass
-                    RERUN_AT_END = True
-                case "save_answer":
-                    pass
-                case _:
-                    print("Critical error: function not recognized")
+                        st.write(confirmation_message)
+                        col1, col2, _ = st.columns([1, 1, 5])
+                        with col1:
+                            if st.button("Yes", type="primary", use_container_width=True):
+                                question_manager.save_questions(username, questions_list)
+                                st.session_state.current_conversation.add_function_response(
+                                    name="save_questions",
+                                    content="Saved successfully!"
+                                )
+                        with col2:
+                            if st.button("No", use_container_width=False):
+                                st.session_state.current_conversation.add_function_response(
+                                    name="save_questions",
+                                    content="Questions not saved: User rejected."
+                                )
+                        # endregion
+                    case "get_answers":
+                        from_date = arguments["from_date"]
+                        to_date = arguments["to_date"]
+                        answers = answer_manager.get_answers(username, from_date, to_date)
+                        st.session_state.current_conversation.add_function_response("get_answers", str(answers))
+                        st.write(answers)
+                        RERUN_AT_END = True
+                    case "save_answer":
+                        print(arguments)
+                        question = arguments["question"]
+                        answer = arguments["answer"]
+                        if question not in question_manager.get_questions(username):
+                            raise ValueError("Question isn't a daily question of the user!")
+
+                        confirmation_message = (f"Do you want to save this as an answer for your daily question?\n"
+                                                f" * **Question**: {question}\n"
+                                                f" * **Answer**: {answer}")
+                        st.write(confirmation_message)
+                        col1, col2, _ = st.columns([1, 1, 5])
+                        with col1:
+                            if st.button("Yes", type="primary", use_container_width=True):
+                                answer_manager.save_answer(username, question, answer)
+                                st.session_state.current_conversation.add_function_response(
+                                    name="save_answer",
+                                    content="Saved successfully!"
+                                )
+                        with col2:
+                            if st.button("No", use_container_width=False):
+                                st.session_state.current_conversation.add_function_response(
+                                    name="save_answer",
+                                    content="Questions not saved: User rejected."
+                                )
+                    case _:
+                        st.error("Critical Error: function not recognized")
+            except ValueError as e:
+                st.session_state.current_conversation.add_function_response("get_answers", str(e))
+                st.write(e)
 
 # Turn for AI assistant
 if last_role != "assistant" and last_role != "system":
@@ -132,13 +166,11 @@ if last_role != "assistant" and last_role != "system":
 
             # if function call
             if ai_response.function_call:
-                if ai_response.function_call.name in ["save_questions", "save_answer"]:
-                    RERUN_AT_END = True
+                RERUN_AT_END = True
 
             # if message present
             if ai_response.content:
                 st.write(ai_response.content)
-
 
 # Get title for conversation
 if st.session_state.current_conversation.title == "New Conversation" and len(
@@ -147,14 +179,11 @@ if st.session_state.current_conversation.title == "New Conversation" and len(
     st.session_state.current_conversation.title = title
 
 # TODO Get summary for the conversation
-
+# TODO Update sidebar
 # TODO append to RAG
 
 # Save the conversation
 save_conversation(username, st.session_state.current_conversation)
-
-# TODO Update sidebar
-
 st.sidebar.divider()
 sthelper.show_sidebar_logout_button()
 

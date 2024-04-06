@@ -36,14 +36,6 @@ class Conversation:
         self.last_modified: datetime = datetime.now()
 
     def add_ai_message(self, ai_response):
-        """
-
-        Args:
-            ai_response: Response from OpenAI
-
-        Returns:
-
-        """
         if ai_response.function_call:
             self.history.append(
                 {

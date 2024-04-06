@@ -3,7 +3,7 @@ import openai
 from openai.types.chat import ChatCompletionMessage
 from modules.question_manager import save_questions_description, get_questions_description
 from model.conversation import Conversation
-from modules.config import config
+from modules.config import config, CHAT_MODEL
 
 function_descriptions = [
     save_questions_description,
@@ -42,7 +42,7 @@ class ChatBot:
             raise ValueError("Last message from assistant or system, can't complete query!")
 
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=CHAT_MODEL,
             messages=conversation.history,
             functions=self.function_descriptions,
 
@@ -57,7 +57,7 @@ class ChatBot:
 
         # Call the OpenAI API to generate a summary
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=CHAT_MODEL,
             messages=[{"role": "user",
                        "content": f"Provide a summary for this conversation:\n\n{conversation_text}"}],
             max_tokens=max_tokens,
@@ -72,7 +72,7 @@ class ChatBot:
 
         # Call the OpenAI API to generate a summary
         response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=CHAT_MODEL,
             messages=[{"role": "user",
                        "content": f"Provide a title for this conversation."
                                   f"Please omit any brackets or escape characters, that aren't suitable"

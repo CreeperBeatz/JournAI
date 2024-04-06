@@ -69,7 +69,7 @@ for turn in st.session_state.current_conversation.history:
 
 user_prompt = st.chat_input()
 if user_prompt is not None:
-    st.session_state.current_conversation.add_turn("user", user_prompt)
+    st.session_state.current_conversation.add_human_message("user", user_prompt)
     with st.chat_message("user"):
         st.write(user_prompt)
 
@@ -86,24 +86,24 @@ if last_role != "assistant" and last_role != "system":
             with col1:
                 if st.button("Yes", type="primary", use_container_width=True):
                     ques_manager.save_questions("test", st.session_state.questions)
-                    st.session_state.current_conversation.add_turn("assistant", ai_answer)
-                    st.session_state.current_conversation.add_turn("user", "yes")
-                    st.session_state.current_conversation.add_turn(
-                        "function",
-                        "Successfully saved.",
-                        "save_questions"
+                    st.session_state.current_conversation.add_ai_message(ai_answer)
+                    st.session_state.current_conversation.add_human_message("yes")
+                    st.session_state.current_conversation.add_function_response(
+                        name="save_questions",
+                        content="Successfully saved."
                     )
                     st.session_state.questions = None
             with col2:
                 if st.button("No", use_container_width=True):
-                    st.session_state.current_conversation.add_turn("assistant", ai_answer)
-                    st.session_state.current_conversation.add_turn("user", "No")
+                    st.session_state.current_conversation.add_human_message("assistant", ai_answer)
+                    st.session_state.current_conversation.add_human_message("user", "No")
                     st.session_state.questions = None
         elif "answers" in st.session_state.keys() and st.session_state.current_conversation:
             pass
         else:
             with st.spinner("Loading..."):
                 ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
+                st.session_state.current_conversation.add_ai_message(ai_response)
 
                 # if function call
                 if ai_response.function_call:
@@ -113,17 +113,20 @@ if last_role != "assistant" and last_role != "system":
                                 'questions']
                             RERUN_AT_END = True
                         case "get_questions":
-                            st.session_state.current_conversation.add_turn(
-                                role="function",
+                            st.session_state.current_conversation.add_function_response(
                                 content=", ".join(ques_manager.get_questions(username)),
                                 name="get_questions"
                             )
                             RERUN_AT_END = True
+                        case "save_question":
+                            pass
+                        case "get_questions":
+                            pass
 
                 # if message present
                 if ai_response.content:
                     st.write(ai_response.content)
-                    st.session_state.current_conversation.add_turn("assistant", ai_response.content)
+
 
 # Get title for conversation
 if st.session_state.current_conversation.title == "New Conversation" and len(

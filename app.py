@@ -98,7 +98,7 @@ if st.session_state.current_conversation.history[-1].get("function_call"):
                         RERUN_AT_END = True
                     case "save_questions":
                         # region save questions
-                        questions_list = json.loads(arguments)["questions"]
+                        questions_list = arguments["questions"]
 
                         multiline_questions = '\n * '.join(questions_list)
                         confirmation_message = f"Do you want to save these as your daily questions?\n * {multiline_questions}"

@@ -75,7 +75,7 @@ def authenticate() -> str:
     """
 
     Returns:
-        Username
+        Username, name
     """
     authenticator = stauth.Authenticate(
         config["credentials"],
@@ -86,7 +86,12 @@ def authenticate() -> str:
 
     st.session_state.authenticator = authenticator
 
-    name, authentication_status, username = authenticator.login("main")
+    try:
+        name, authentication_status, username = authenticator.login("main")
+    except KeyError as e:
+        # Error in the library, log out the user
+        authenticator.logout()
+        st.stop()
 
     if authentication_status is False:
         show_only_first_page()
@@ -102,4 +107,4 @@ def authenticate() -> str:
         except Exception as e:
             st.error(e)
         st.stop()
-    return username
+    return username, name

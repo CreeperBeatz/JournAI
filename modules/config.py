@@ -9,3 +9,4 @@ PAGE_CONFIG = {"page_title": "JournAI", "page_icon": "logo.png"}
 CHATS_FOLDER = "chats"
 QUESTIONS_FOLDER = "questions"
 ANSWERS_FOLDER = "answers"
+CHAT_MODEL = "gpt-3.5-turbo-1106"

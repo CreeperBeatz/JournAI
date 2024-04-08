@@ -1,9 +1,11 @@
+import glob
 import json
 import os
 from datetime import datetime
 
 from model.conversation import Conversation
 from modules.config import CHATS_FOLDER
+from modules.utilities import sanitize_filename
 
 
 def save_conversation(username: str, conversation: Conversation):
@@ -14,10 +16,19 @@ def save_conversation(username: str, conversation: Conversation):
 
     user_dir = os.path.join(CHATS_FOLDER, username)
     os.makedirs(user_dir, exist_ok=True)
+
+    # Delete any previous conversation files
+    file_pattern = os.path.join(user_dir, f"{conversation.id}_*.json")
+    for file in glob.glob(file_pattern):
+        os.remove(file)
+
+    # Sanitize conversation title
+    title = sanitize_filename(conversation.title)
+
     file_path = os.path.join(
         user_dir,
         f"{conversation.id}_"
-        f"{conversation.title.replace('_', ' ')}"
+        f"{title}"
         f".json"
     )
     with open(file_path, 'w') as file:
@@ -48,7 +59,7 @@ def list_conversations(username: str) -> dict[str, dict[str, str | datetime]]:
     Lists conversation titles, last modified dates, and IDs for a given user based on the file names,
     organizing them into a dictionary.
 
-    The function sorts the conversations in Descending order based on their timestamp.
+    The function sorts the conversations in Descending order based on their creation timestamp.
 
     Args:
         username (str): Username of the person whose conversations are being listed.
@@ -65,19 +76,19 @@ def list_conversations(username: str) -> dict[str, dict[str, str | datetime]]:
         if filename.endswith(".json"):
             conversation_id = filename.split('_', 1)[0]
             title = filename.split('_', 1)[1].rsplit('.', 1)[0]
-            last_modified_time = datetime.fromtimestamp(
-                os.path.getmtime(os.path.join(user_dir, filename))
+            creation_time = datetime.fromtimestamp(
+                os.path.getctime(os.path.join(user_dir, filename))
             )
 
             conversations[conversation_id] = {
                 "title": title,
-                "last_modified": last_modified_time
+                "creation_time": creation_time
             }
 
     # Sort conversations by 'last_modified' in descending order
     sorted_conversations = dict(sorted(
         conversations.items(),
-        key=lambda item: item[1]['last_modified'],
+        key=lambda item: item[1]['creation_time'],
         reverse=True
     ))
 

@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Any
 
 
 class Conversation:
@@ -27,8 +27,32 @@ class Conversation:
         unique_id = uuid.uuid5(uuid.NAMESPACE_DNS, timestamp)
         return str(unique_id)
 
-    def add_turn(self, role: str, content: str):
-        self.history.append({"role": role, "content": content})
+    def add_human_message(self,content: str):
+        self.history.append({"role": "user", "content": content})
+        self.last_modified: datetime = datetime.now()
+
+    def add_function_response(self, name: str, content: str):
+        self.history.append({"role": "function", "content": content, "name": name})
+        self.last_modified: datetime = datetime.now()
+
+    def add_ai_message(self, ai_response):
+        if ai_response.function_call:
+            self.history.append(
+                {
+                    "role": "assistant",
+                    "function_call": {
+                        "arguments": ai_response.function_call.arguments,
+                        "name": ai_response.function_call.name
+                    }
+                }
+            )
+        else:
+            self.history.append(
+                {
+                    "role": "assistant",
+                    "content": ai_response.content
+                }
+            )
         self.last_modified: datetime = datetime.now()
 
     def set_metadata(self, **kwargs):

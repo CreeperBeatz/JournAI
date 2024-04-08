@@ -48,7 +48,7 @@ def save_questions(username: str, questions: List[str]):
         json.dump(questions, file)
 
 
-def load_questions(username: str) -> List[str]:
+def get_questions(username: str) -> List[str]:
     """
     Load daily journal questions for the user.
 
@@ -67,3 +67,10 @@ def load_questions(username: str) -> List[str]:
     else:
         # Return an empty list if the file doesn't exist
         return []
+
+
+get_questions_description = {
+    "name": "get_questions",
+    "description": "Get daily journaling questions for the current user.",
+    "parameters": {}
+}

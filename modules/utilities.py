@@ -17,3 +17,9 @@ class ExtendedEnum(Enum):
         """
         return list(map(lambda c: c.value, cls))
 
+
+def sanitize_filename(filename):
+    invalid_characters = "<>:\"/\\|?*\0"
+    for char in invalid_characters:
+        filename = filename.replace(char, "")
+    return filename

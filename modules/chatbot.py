@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import List
 import openai
@@ -5,7 +6,7 @@ from openai.types.chat import ChatCompletionMessage
 from modules.question_manager import save_questions_description, get_questions_description
 from modules.answer_manager import get_answers_description, save_answer_description
 from model.conversation import Conversation
-from modules.config import config, CHAT_MODEL
+from modules.config import config, CHAT_MODEL, EMBEDDING_MODEL
 
 function_descriptions = [
     save_questions_description,
@@ -82,3 +83,18 @@ class ChatBot:
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content
+
+    def get_embedding(self, text):
+        if not text or type(text) is not str:
+            return None
+
+        try:
+            embedding = self.client.embeddings.create(
+                input=text,
+                model=EMBEDDING_MODEL
+            ).data[0].embedding
+            return embedding
+        except Exception as e:
+            logging.error(f"Error while embedding: {e}")
+            return None
+

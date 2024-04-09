@@ -27,7 +27,7 @@ class Conversation:
         unique_id = uuid.uuid5(uuid.NAMESPACE_DNS, timestamp)
         return str(unique_id)
 
-    def add_human_message(self,content: str):
+    def add_human_message(self, content: str):
         self.history.append({"role": "user", "content": content})
         self.last_modified: datetime = datetime.now()
 

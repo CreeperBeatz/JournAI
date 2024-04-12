@@ -55,6 +55,9 @@ class Conversation:
             )
         self.last_modified: datetime = datetime.now()
 
+    def add_system_message(self, system_message: str):
+        self.history.append({"role": "system", "content": system_message})
+
     def set_metadata(self, **kwargs):
         self.metadata = kwargs
 

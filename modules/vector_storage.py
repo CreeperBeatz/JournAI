@@ -1,17 +1,9 @@
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict
 from vectordb import InMemoryExactNNVectorDB
-from docarray import BaseDoc, DocList
-from docarray.typing import NdArray
-
+from docarray import DocList
+from model.textdoc import TextDoc
 from modules.config import VECTOR_FOLDER
-
-
-class TextDoc(BaseDoc):
-    date: datetime = datetime.now()
-    text: str
-    username: str
-    embedding: NdArray
 
 
 class VectorDBStorage:
@@ -22,7 +14,7 @@ class VectorDBStorage:
         self.db = InMemoryExactNNVectorDB[TextDoc](workspace=VECTOR_FOLDER)
 
     def insert_document(self, username: str, text: str, embedding: List[float],
-                        date: datetime = None) -> str:
+                        date: datetime = None):
         """
         Insert a document into the collection. The current datetime is used if no date is provided.
 
@@ -33,34 +25,43 @@ class VectorDBStorage:
         date (datetime, optional): The date associated with the document.
 
         Returns:
-        str: The ID of the inserted document.
         """
         if date is None:
             date = datetime.now()
-        text_doc = TextDoc()
+        text_doc = TextDoc(
+            username=username,
+            text=text,
+            date=date,
+            embedding=embedding
+        )
+        text_doc.username = username
         text_doc.text = text
         text_doc.date = date
         text_doc.embedding = embedding
-        self.db.index(inputs=DocList[TextDoc](text_doc))
-        return
+        self.db.index(inputs=DocList[TextDoc]([text_doc]))
+        return True
 
-    def search_similar_vectors(self, username: str, query_vector: List[float], limit: int = 5) -> List[
-        Dict]:
+    def search_similar(self, username: str, query_text: str, query_embedding: List[float],
+                       limit: int = 5) -> List[Dict]:
         """
         Search for documents with vectors similar to the given query vector,
         filtered by the specified username.
 
         Args:
-        username (str): Username to filter documents by.
-        query_vector (List[float]): The query vector for similarity search.
-        limit (int): Maximum number of similar documents to return.
+            username (str): Username to filter documents by.
+            query_text (str):
+            query_embedding (List[float]): The query vector for similarity search.
+            limit (int): Maximum number of similar documents to return.
 
         Returns:
         List[Dict]: A list of documents with similar vectors, limited to `limit` results.
         """
-        query = {
-            "vector": query_vector,
-            "filter": {"username": username},
-            "limit": limit
-        }
-        return self.collection.search(query)
+        query = TextDoc(
+            username=username,
+            text=query_text,
+            embedding=query_embedding
+        )
+        results = self.db.search(inputs=DocList[TextDoc]([query]), limit=limit)[0].matches
+
+        # Double check for correct username
+        return [result for result in results if result.username == username]

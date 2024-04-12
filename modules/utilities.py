@@ -1,5 +1,7 @@
 from enum import Enum
 
+from model.textdoc import TextDoc
+
 
 # Enum wrapper
 class ExtendedEnum(Enum):
@@ -23,3 +25,11 @@ def sanitize_filename(filename):
     for char in invalid_characters:
         filename = filename.replace(char, "")
     return filename
+
+
+def context_as_system_message(similar_docs: list[TextDoc]) -> str:
+    system_message = ("You remember the following conversations you had with the user, based on"
+                      "their query:\n")
+    for doc in similar_docs:
+        system_message += f"{doc.date.strftime('%Y%m%d%H%M%S')}: {doc.text}\n"
+    return system_message

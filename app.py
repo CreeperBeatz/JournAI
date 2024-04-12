@@ -1,6 +1,7 @@
 import json
-
 import streamlit as st
+from modules.vector_storage import VectorDBStorage
+
 from modules.config import PAGE_CONFIG
 import logging
 import modules.streamlit_helper as sthelper
@@ -25,6 +26,11 @@ st.markdown("Welcome to JournAI!\n\n")
 # Initialize chosen conversation
 if "conversation_id" not in st.session_state.keys():
     st.session_state.conversation_id = None
+
+# Initialize embeddings DB
+if "embeddings_db" not in st.session_state.keys():
+    st.session_state.embeddings_db = VectorDBStorage()
+
 
 # Load the newest conversations
 conversation_options = list_conversations(username)
@@ -178,7 +184,13 @@ if st.session_state.current_conversation.title == "New Conversation" and len(
     title = st.session_state.chatbot.get_title(st.session_state.current_conversation)
     st.session_state.current_conversation.title = title
 
-# TODO Get summary for the conversation
+# TODO Optimize (different thread)
+summary = st.session_state.chatbot.get_summary(st.session_state.current_conversation)
+vector = st.session_state.chatbot.get_embedding(summary)
+#st.session_state.embeddings_db.
+# TODO Think of a way to only upload the last summary
+
+
 # TODO Update sidebar
 # TODO append to RAG
 

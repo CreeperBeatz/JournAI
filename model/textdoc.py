@@ -1,10 +1,11 @@
 from datetime import datetime
 from docarray import BaseDoc
-from docarray.typing import NdArray
+from docarray.typing import NdArrayEmbedding
 
 
 class TextDoc(BaseDoc):
-    date: datetime = datetime.now()
+    uuid: str
+    date: str = datetime.now().strftime('%Y-%m-%d')
     text: str
     username: str
-    embedding: NdArray
+    embedding: NdArrayEmbedding[1536]

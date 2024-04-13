@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import List, Dict
-from vectordb import InMemoryExactNNVectorDB
+from typing import List, Dict, Tuple
 from docarray import DocList
+from docarray.index import HnswDocumentIndex
 from model.textdoc import TextDoc
 from modules.config import VECTOR_FOLDER
 
@@ -11,10 +11,10 @@ class VectorDBStorage:
         """
         TODO
         """
-        self.db = InMemoryExactNNVectorDB[TextDoc](workspace=VECTOR_FOLDER)
+        self.db = HnswDocumentIndex[TextDoc](work_dir=VECTOR_FOLDER)
 
     def insert_document(self, username: str, text: str, embedding: List[float],
-                        date: datetime = None, id: str = None):
+                        date: datetime | str | None = None, uuid: str = None):
         """
         Insert a document into the collection. The current datetime is used if no date is provided.
 
@@ -22,52 +22,70 @@ class VectorDBStorage:
         username (str): The username associated with the document.
         text (str): The text content of the document.
         vector (List[float]): The feature vector associated with the document.
-        date (datetime, optional): The date associated with the document.
-        id (str, optional): If an id(UUID) is provided, a check is made if a document with that ID
+        date (datetime | str, optional): The timestamp associated with the document.
+        uuid (str, optional): If an id(UUID) is provided, a check is made if a document with that UUID
             doesn't already exist. If it does, the newly passed document overrides the current one.
 
+
         Returns:
+
+        Notes:
+            This UUID is different from the `doc_id` and `id` present on all BaseDoc items, as there is
+            no reliable way to set them, as of docarray version 0.40.0
         """
+        # Delete any previous records with the same ID
+        doc = self.search_by_uuid(uuid)
+        if doc:
+            self.db.__delitem__(doc.id)
+
+        # Validate date parameter
         if date is None:
-            date = datetime.now()
+            date = datetime.now().strftime('%Y-%m-%d')
+        if type(date) is datetime:
+            date = date.strftime('%Y-%m-%d')
+        if type(date) is not str:
+            raise ValueError("date parameter is not datetime, str or None!")
+
+        # Insert new record
         text_doc = TextDoc(
             username=username,
             text=text,
             date=date,
             embedding=embedding,
-            id=id
+            uuid=uuid
         )
-        self.db.index(inputs=DocList[TextDoc]([text_doc]))
-        return True
+        return self.db.index(text_doc)
 
-    def search_similar(self, username: str, query_text: str, query_embedding: List[float],
-                       limit: int = 5) -> List[Dict]:
+    def search_similar(self, username: str, query_embedding: List[float], omit_uuid: str = None,
+                       limit: int = 5) -> Tuple[List[TextDoc], List[float]]:
         """
         Search for documents with vectors similar to the given query vector,
         filtered by the specified username.
 
         Args:
             username (str): Username to filter documents by.
-            query_text (str):
             query_embedding (List[float]): The query vector for similarity search.
+            omit_uuid (str, optional): Document uuid to exclude from the search. Usually used for current
+                conversation. CURRENTLY NOT FUNCTIONAL!
             limit (int): Maximum number of similar documents to return.
 
         Returns:
-        List[Dict]: A list of documents with similar vectors, limited to `limit` results.
+            Tuple[List[TextDoc], List[float]]: Tuple containing a list of documents with similar
+                vectors as a first value, limited to `limit` results, and a list of similarity scores
+                for all the documents, where closer to 0 means better similarity
         """
-        query = TextDoc(
-            username=username,
-            text=query_text,
-            embedding=query_embedding
+        query = (
+            self.db.build_query()
+            .filter(filter_query={'username': {'$eq': username}})
+            .find(query=query_embedding, search_field='embedding', limit=limit)
+            .build()
         )
-        results = self.db.search(inputs=DocList[TextDoc]([query]), limit=limit)[0].matches
 
-        # Double check for correct username
-        return [result for result in results if result.username == username]
+        return self.db.execute_query(query)
 
-    def search_by_id(self, id: str) -> TextDoc | None:
+    def search_by_uuid(self, uuid: str) -> TextDoc | None:
         """
-        Search a document based on its ID. Returns None if no doc with that ID.
+        Search a document based on its UUID. Returns None if no doc with that ID.
         """
-        results = self.db.get_by_id(id)
-        return results
+        results = self.db.filter({'uuid': {'$eq': uuid}})
+        return results[0] if results else None

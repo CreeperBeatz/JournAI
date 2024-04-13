@@ -1,5 +1,6 @@
 import json
 import streamlit as st
+from modules.utilities import context_as_system_message
 from modules.vector_storage import VectorDBStorage
 
 from modules.config import PAGE_CONFIG
@@ -61,14 +62,26 @@ if not st.session_state.conversation_id:
     st.session_state.conversation_id = st.session_state.current_conversation.id
     st.session_state.questions = None
 elif st.session_state.conversation_id != st.session_state.current_conversation.id:
-    # New conversation chosen, load it from files
+    # New conversation chosen, save summary/embedding for current conversation and load new one
+    if len(st.session_state.current_conversation.history) > 1:
+        with st.spinner("Saving summary for last conversation..."):
+            summary = st.session_state.chatbot.get_summary(st.session_state.current_conversation)
+            vector = st.session_state.chatbot.get_embedding(summary)
+            print(f"Current Conversation UUID: {st.session_state.current_conversation.id}")
+            st.session_state.embeddings_db.insert_document(
+                uuid=st.session_state.current_conversation.id,
+                username=username,
+                text=summary,
+                embedding=vector,
+                date=st.session_state.current_conversation.creation_date
+            )
     user_questions = question_manager.get_questions(username)
     st.session_state.chatbot = ChatBot(name)
     st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
     st.session_state.conversation_id = st.session_state.current_conversation.id
     st.session_state.questions = None
 
-# Display all messages
+# Display all messages so far
 for turn in st.session_state.current_conversation.history:
     role = turn["role"]
     if role != "system":
@@ -163,8 +176,23 @@ if st.session_state.current_conversation.history[-1].get("function_call"):
                 st.session_state.current_conversation.add_function_response("get_answers", str(e))
                 st.write(e)
 
-# Turn for AI assistant
-if last_role != "assistant" and last_role != "system":
+# RAG Turn (only after first User Query, for optimisation)
+if last_role == "user" and len(st.session_state.current_conversation.history) == 2:
+    with st.chat_message("assistant"):
+        with st.spinner("Loading previous conversations..."):
+            query_text = st.session_state.current_conversation.history[-1]["content"]
+            query_embedding = st.session_state.chatbot.get_embedding(query_text)
+            context, _ = st.session_state.embeddings_db.search_similar(
+                username=username,
+                query_embedding=query_embedding
+            )
+            st.session_state.current_conversation.add_system_message(
+                context_as_system_message(context)
+            )
+            RERUN_AT_END = True
+
+# AI assistant turn (After RAG)
+if last_role == "system" and len(st.session_state.current_conversation.history) > 1:
     with st.chat_message("assistant"):
         with st.spinner("Loading..."):
             ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
@@ -183,12 +211,6 @@ if st.session_state.current_conversation.title == "New Conversation" and len(
         st.session_state.current_conversation.history) > 1:
     title = st.session_state.chatbot.get_title(st.session_state.current_conversation)
     st.session_state.current_conversation.title = title
-
-# TODO Optimize Performance (different thread)
-# TODO Optimize API calls
-# TODO append to RAG
-summary = st.session_state.chatbot.get_summary(st.session_state.current_conversation)
-vector = st.session_state.chatbot.get_embedding(summary)
 
 
 # Save the conversation

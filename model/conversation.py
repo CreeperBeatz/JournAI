@@ -16,6 +16,7 @@ class Conversation:
         self.history: List[Dict[str, str]] = []
         self.metadata: Dict[str, any] = {}
         self.last_modified: datetime = datetime.now()
+        self.creation_date: datetime = datetime.now()
 
         if system_message and type(system_message) is str:
             self.history.append({"role": "system", "content": system_message})
@@ -68,6 +69,7 @@ class Conversation:
             "history": self.history,
             "metadata": self.metadata,
             "last_modified": self.last_modified.strftime('%Y%m%d%H%M%S'),
+            "creation_date": self.creation_date.strftime('%Y%m%d%H%M%S')
         }, indent=4)
 
     def to_text(self) -> str:
@@ -85,4 +87,5 @@ class Conversation:
         conversation.history = data['history']
         conversation.metadata = data['metadata']
         conversation.last_modified = datetime.strptime(data['last_modified'], '%Y%m%d%H%M%S')
+        conversation.creation_date = datetime.strptime(data['creation_date'], '%Y%m%d%H%M%S')
         return conversation

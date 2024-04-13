@@ -17,6 +17,7 @@ class Conversation:
         self.metadata: Dict[str, any] = {}
         self.last_modified: datetime = datetime.now()
         self.creation_date: datetime = datetime.now()
+        self.new_messages: bool = False
 
         if system_message and type(system_message) is str:
             self.history.append({"role": "system", "content": system_message})
@@ -31,10 +32,12 @@ class Conversation:
     def add_human_message(self, content: str):
         self.history.append({"role": "user", "content": content})
         self.last_modified: datetime = datetime.now()
+        self.new_messages = True
 
     def add_function_response(self, name: str, content: str):
         self.history.append({"role": "function", "content": content, "name": name})
         self.last_modified: datetime = datetime.now()
+        self.new_messages = True
 
     def add_ai_message(self, ai_response):
         if ai_response.function_call:
@@ -55,9 +58,11 @@ class Conversation:
                 }
             )
         self.last_modified: datetime = datetime.now()
+        self.new_messages = True
 
     def add_system_message(self, system_message: str):
         self.history.append({"role": "system", "content": system_message})
+        self.new_messages = True
 
     def set_metadata(self, **kwargs):
         self.metadata = kwargs
@@ -77,7 +82,7 @@ class Conversation:
         Convert the conversation history into a text format (`{role}: {content}\n`)
         """
         return "\n".join(
-            [f"{message['role']}: {message['content']}" for message in self.history])
+            [f"{message['role']}: {message.get('content')}" for message in self.history])
 
     @classmethod
     def from_json(cls, data: dict):

@@ -32,25 +32,31 @@ if "conversation_id" not in st.session_state.keys():
 if "embeddings_db" not in st.session_state.keys():
     st.session_state.embeddings_db = VectorDBStorage()
 
+if "conversation_changed" not in st.session_state.keys():
+    st.session_state.conversation_changed = False
 
 # Load the newest conversations
 conversation_options = list_conversations(username)
 
+def on_change_conversation():
+    st.session_state.conversation_changed = True
+
 with st.sidebar:
+    default_index = None
     if st.button("➕ New Conversation"):
-        default_index = None
         st.session_state.conversation_id = None
-    else:
+    elif not st.session_state.conversation_changed:
         # Get index (int) of session state choice
         options_list = list(conversation_options.keys())
-        default_index = options_list.index(
-            st.session_state.conversation_id) if st.session_state.conversation_id in options_list else None
+        if st.session_state.conversation_id in options_list:
+            default_index = options_list.index(st.session_state.conversation_id)
 
     st.session_state.conversation_id = st.radio(
         "Choose a conversation",
         options=conversation_options,
         format_func=lambda x: conversation_options[x]['title'],
         index=default_index,
+        on_change=on_change_conversation
     )
 
 if not st.session_state.conversation_id:
@@ -62,19 +68,7 @@ if not st.session_state.conversation_id:
     st.session_state.conversation_id = st.session_state.current_conversation.id
     st.session_state.questions = None
 elif st.session_state.conversation_id != st.session_state.current_conversation.id:
-    # New conversation chosen, save summary/embedding for current conversation and load new one
-    if len(st.session_state.current_conversation.history) > 1:
-        with st.spinner("Saving summary for last conversation..."):
-            summary = st.session_state.chatbot.get_summary(st.session_state.current_conversation)
-            vector = st.session_state.chatbot.get_embedding(summary)
-            print(f"Current Conversation UUID: {st.session_state.current_conversation.id}")
-            st.session_state.embeddings_db.insert_document(
-                uuid=st.session_state.current_conversation.id,
-                username=username,
-                text=summary,
-                embedding=vector,
-                date=st.session_state.current_conversation.creation_date
-            )
+    # New conversation chosen, load it from files
     user_questions = question_manager.get_questions(username)
     st.session_state.chatbot = ChatBot(name)
     st.session_state.current_conversation = load_conversation(username, st.session_state.conversation_id)
@@ -84,7 +78,7 @@ elif st.session_state.conversation_id != st.session_state.current_conversation.i
 # Display all messages so far
 for turn in st.session_state.current_conversation.history:
     role = turn["role"]
-    if role != "system":
+    if role not in ["system"]:
         with st.chat_message(turn["role"]):
             # FIXME visualization of messages with no content
             if turn.get("content"):
@@ -178,21 +172,20 @@ if st.session_state.current_conversation.history[-1].get("function_call"):
 
 # RAG Turn (only after first User Query, for optimisation)
 if last_role == "user" and len(st.session_state.current_conversation.history) == 2:
-    with st.chat_message("assistant"):
-        with st.spinner("Loading previous conversations..."):
-            query_text = st.session_state.current_conversation.history[-1]["content"]
-            query_embedding = st.session_state.chatbot.get_embedding(query_text)
-            context, _ = st.session_state.embeddings_db.search_similar(
-                username=username,
-                query_embedding=query_embedding
-            )
-            st.session_state.current_conversation.add_system_message(
-                context_as_system_message(context)
-            )
-            RERUN_AT_END = True
+    with st.spinner("Loading previous conversations..."):
+        query_text = st.session_state.current_conversation.history[-1]["content"]
+        query_embedding = st.session_state.chatbot.get_embedding(query_text)
+        context, _ = st.session_state.embeddings_db.search_similar(
+            username=username,
+            query_embedding=query_embedding
+        )
+        st.session_state.current_conversation.add_system_message(
+            context_as_system_message(context)
+        )
+        RERUN_AT_END = True
 
 # AI assistant turn (After RAG)
-if last_role == "system" and len(st.session_state.current_conversation.history) > 1:
+if last_role != "assistant" and len(st.session_state.current_conversation.history) > 1:
     with st.chat_message("assistant"):
         with st.spinner("Loading..."):
             ai_response = st.session_state.chatbot.chat(st.session_state.current_conversation)
@@ -214,7 +207,21 @@ if st.session_state.current_conversation.title == "New Conversation" and len(
 
 
 # Save the conversation
-save_conversation(username, st.session_state.current_conversation)
+if st.session_state.current_conversation.new_messages:
+    save_conversation(username, st.session_state.current_conversation)
+    st.session_state.current_conversation.new_messages = False
+    if len(st.session_state.current_conversation.history) > 1:
+        summary = st.session_state.chatbot.get_summary(st.session_state.current_conversation)
+        vector = st.session_state.chatbot.get_embedding(summary)
+        st.session_state.embeddings_db.insert_document(
+            uuid=st.session_state.current_conversation.id,
+            username=username,
+            text=summary,
+            embedding=vector,
+            date=st.session_state.current_conversation.creation_date
+        )
+        print(f"Current Conversation UUID: {st.session_state.current_conversation.id}")
+        print("Successful save")
 st.sidebar.divider()
 sthelper.show_sidebar_logout_button()
 

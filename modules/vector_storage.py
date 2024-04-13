@@ -87,5 +87,8 @@ class VectorDBStorage:
         """
         Search a document based on its UUID. Returns None if no doc with that ID.
         """
-        results = self.db.filter({'uuid': {'$eq': uuid}})
-        return results[0] if results else None
+        try:
+            results = self.db.filter({'uuid': {'$eq': uuid}})
+            return results[0] if results else None
+        except RuntimeError:
+            return None

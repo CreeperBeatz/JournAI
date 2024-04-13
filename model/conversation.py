@@ -70,6 +70,13 @@ class Conversation:
             "last_modified": self.last_modified.strftime('%Y%m%d%H%M%S'),
         }, indent=4)
 
+    def to_text(self) -> str:
+        """
+        Convert the conversation history into a text format (`{role}: {content}\n`)
+        """
+        return "\n".join(
+            [f"{message['role']}: {message['content']}" for message in self.history])
+
     @classmethod
     def from_json(cls, data: dict):
         conversation = cls()

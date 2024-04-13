@@ -35,6 +35,9 @@ if "embeddings_db" not in st.session_state.keys():
 if "conversation_changed" not in st.session_state.keys():
     st.session_state.conversation_changed = False
 
+if "current_conversation" not in st.session_state.keys():
+    st.session_state.current_conversation = None
+
 # Load the newest conversations
 conversation_options = list_conversations(username)
 

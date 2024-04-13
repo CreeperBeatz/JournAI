@@ -14,7 +14,7 @@ class VectorDBStorage:
         self.db = InMemoryExactNNVectorDB[TextDoc](workspace=VECTOR_FOLDER)
 
     def insert_document(self, username: str, text: str, embedding: List[float],
-                        date: datetime = None):
+                        date: datetime = None, id: str = None):
         """
         Insert a document into the collection. The current datetime is used if no date is provided.
 
@@ -23,6 +23,8 @@ class VectorDBStorage:
         text (str): The text content of the document.
         vector (List[float]): The feature vector associated with the document.
         date (datetime, optional): The date associated with the document.
+        id (str, optional): If an id(UUID) is provided, a check is made if a document with that ID
+            doesn't already exist. If it does, the newly passed document overrides the current one.
 
         Returns:
         """
@@ -32,12 +34,9 @@ class VectorDBStorage:
             username=username,
             text=text,
             date=date,
-            embedding=embedding
+            embedding=embedding,
+            id=id
         )
-        text_doc.username = username
-        text_doc.text = text
-        text_doc.date = date
-        text_doc.embedding = embedding
         self.db.index(inputs=DocList[TextDoc]([text_doc]))
         return True
 
@@ -65,3 +64,10 @@ class VectorDBStorage:
 
         # Double check for correct username
         return [result for result in results if result.username == username]
+
+    def search_by_id(self, id: str) -> TextDoc | None:
+        """
+        Search a document based on its ID. Returns None if no doc with that ID.
+        """
+        results = self.db.get_by_id(id)
+        return results

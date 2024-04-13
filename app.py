@@ -184,15 +184,12 @@ if st.session_state.current_conversation.title == "New Conversation" and len(
     title = st.session_state.chatbot.get_title(st.session_state.current_conversation)
     st.session_state.current_conversation.title = title
 
-# TODO Optimize (different thread)
+# TODO Optimize Performance (different thread)
+# TODO Optimize API calls
+# TODO append to RAG
 summary = st.session_state.chatbot.get_summary(st.session_state.current_conversation)
 vector = st.session_state.chatbot.get_embedding(summary)
-#st.session_state.embeddings_db.
-# TODO Think of a way to only upload the last summary
 
-
-# TODO Update sidebar
-# TODO append to RAG
 
 # Save the conversation
 save_conversation(username, st.session_state.current_conversation)

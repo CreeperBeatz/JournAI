@@ -38,9 +38,6 @@ class ChatBot:
         Returns:
             ChatCompletionMessage
         """
-
-        # TODO add RAG
-
         last_role = conversation.history[-1]["role"]
         if last_role == "assistant" and last_role == "system":
             raise ValueError("Last message from assistant or system, can't complete query!")
@@ -55,31 +52,25 @@ class ChatBot:
         return msg
 
     def get_summary(self, conversation, max_tokens: int = 150) -> str:
-        # Prepare the conversation history as a single string
-        conversation_text = "\n".join(
-            [f"{message['role']}: {message['content']}" for message in conversation.history])
-
         # Call the OpenAI API to generate a summary
         response = self.client.chat.completions.create(
             model=CHAT_MODEL,
             messages=[{"role": "user",
-                       "content": f"Provide a summary for this conversation:\n\n{conversation_text}"}],
+                       "content": f"Provide a summary for this "
+                                  f"conversation:\n\n{conversation.to_text()}"}],
             max_tokens=max_tokens,
         )
 
         return response.choices[0].message.content
 
     def get_title(self, conversation, max_tokens: int = 10):
-        # Prepare the conversation history as a single string
-        conversation_text = str(conversation.history)
-
         # Call the OpenAI API to generate a summary
         response = self.client.chat.completions.create(
             model=CHAT_MODEL,
             messages=[{"role": "user",
                        "content": f"Provide a title for this conversation."
                                   f"Please omit any brackets or escape characters, that aren't suitable"
-                                  f"for a filename:\n\n{conversation_text}"}],
+                                  f"for a filename:\n\n{conversation.to_text()}"}],
             max_tokens=max_tokens,
         )
         return response.choices[0].message.content

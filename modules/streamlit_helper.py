@@ -110,20 +110,23 @@ def authenticate() -> str:
         st.stop()
     return username, name
 
+
 def set_session_state_defaults():
     """
     Set `conversation_id` and `conversation` to None, `embeddings_db` to VectorDBStorage(),
     and `conversation_changed` to False
     """
-    # Default values for session state initialization
-    defaults = {
+    # Initialize simple defaults
+    default_values = {
         "conversation_id": None,
-        "embeddings_db": VectorDBStorage(),
         "conversation_changed": False,
         "current_conversation": None
     }
 
-    # Initialize session state with defaults if not already set
-    for key, default in defaults.items():
+    for key, value in default_values.items():
         if key not in st.session_state:
-            st.session_state[key] = default
+            st.session_state[key] = value
+
+    # Initialize complex default for embeddings_db separately
+    if "embeddings_db" not in st.session_state:
+        st.session_state['embeddings_db'] = VectorDBStorage()

@@ -1,16 +1,23 @@
 from datetime import datetime
-from typing import List, Dict, Tuple
-from docarray import DocList
 from docarray.index import HnswDocumentIndex
 from model.textdoc import TextDoc
 from modules.config import VECTOR_FOLDER
+import os
+import sqlite3
+from typing import (
+    List,
+    Tuple,
+)
 
 
 class VectorDBStorage:
     def __init__(self):
         """
-        TODO
+        Initialize a local Hnsw Document storage, that writes TextDocs in an SQLite database and their
+        embeddings in a bin file
         """
+        # Monkey patch the constructor, to ensure compatibility with streamlit
+        HnswDocumentIndex.__init__ = new_init
         self.db = HnswDocumentIndex[TextDoc](work_dir=VECTOR_FOLDER)
 
     def insert_document(self, username: str, text: str, embedding: List[float],
@@ -92,3 +99,23 @@ class VectorDBStorage:
             return results[0] if results else None
         except RuntimeError:
             return None
+
+
+# Save the original __init__ method
+original_init = HnswDocumentIndex.__init__
+
+
+def new_init(self, db_config=None, **kwargs):
+    # Call the original __init__ method
+    original_init(self, db_config, **kwargs)
+
+    # Close the original SQLite connection created in the original __init__
+    if hasattr(self, '_sqlite_conn'):
+        self._sqlite_conn.close()
+
+    # Create a new SQLite connection with check_same_thread set to False
+    self._sqlite_db_path = os.path.join(self._work_dir, 'docs_sqlite.db')
+    self._sqlite_conn = sqlite3.connect(self._sqlite_db_path, check_same_thread=False)
+    self._sqlite_cursor = self._sqlite_conn.cursor()
+    # Log the new connection setup
+    self._logger.debug('Modified connection to DB with check_same_thread=False')

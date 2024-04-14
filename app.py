@@ -30,26 +30,21 @@ sthelper.set_session_state_defaults()
 # Load the newest conversations
 conversation_options = list_conversations(username)
 
-def on_change_conversation():
-    st.session_state.conversation_changed = True
-
 with st.sidebar:
-    default_index = None
     if st.button("➕ New Conversation"):
         st.session_state.conversation_id = None
-    elif not st.session_state.conversation_changed:
-        # Get index (int) of session state choice
-        options_list = list(conversation_options.keys())
-        if st.session_state.conversation_id in options_list:
-            default_index = options_list.index(st.session_state.conversation_id)
+        default_index = 0
+
+    options_list = list(conversation_options.keys())
+    default_index = options_list.index(st.session_state.conversation_id) if st.session_state.conversation_id in options_list else None
 
     st.session_state.conversation_id = st.radio(
         "Choose a conversation",
         options=conversation_options,
         format_func=lambda x: conversation_options[x]['title'],
-        index=default_index,
-        on_change=on_change_conversation
+        index=default_index
     )
+
 
 if not st.session_state.conversation_id:
     # No conversation chosen, begin new conversation

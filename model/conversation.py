@@ -16,6 +16,8 @@ class Conversation:
         self.history: List[Dict[str, str]] = []
         self.metadata: Dict[str, any] = {}
         self.last_modified: datetime = datetime.now()
+        self.creation_date: datetime = datetime.now()
+        self.new_messages: bool = False
 
         if system_message and type(system_message) is str:
             self.history.append({"role": "system", "content": system_message})
@@ -27,13 +29,15 @@ class Conversation:
         unique_id = uuid.uuid5(uuid.NAMESPACE_DNS, timestamp)
         return str(unique_id)
 
-    def add_human_message(self,content: str):
+    def add_human_message(self, content: str):
         self.history.append({"role": "user", "content": content})
         self.last_modified: datetime = datetime.now()
+        self.new_messages = True
 
     def add_function_response(self, name: str, content: str):
         self.history.append({"role": "function", "content": content, "name": name})
         self.last_modified: datetime = datetime.now()
+        self.new_messages = True
 
     def add_ai_message(self, ai_response):
         if ai_response.function_call:
@@ -54,6 +58,11 @@ class Conversation:
                 }
             )
         self.last_modified: datetime = datetime.now()
+        self.new_messages = True
+
+    def add_system_message(self, system_message: str):
+        self.history.append({"role": "system", "content": system_message})
+        self.new_messages = True
 
     def set_metadata(self, **kwargs):
         self.metadata = kwargs
@@ -65,7 +74,15 @@ class Conversation:
             "history": self.history,
             "metadata": self.metadata,
             "last_modified": self.last_modified.strftime('%Y%m%d%H%M%S'),
+            "creation_date": self.creation_date.strftime('%Y%m%d%H%M%S')
         }, indent=4)
+
+    def to_text(self) -> str:
+        """
+        Convert the conversation history into a text format (`{role}: {content}\n`)
+        """
+        return "\n".join(
+            [f"{message['role']}: {message.get('content')}" for message in self.history])
 
     @classmethod
     def from_json(cls, data: dict):
@@ -75,4 +92,5 @@ class Conversation:
         conversation.history = data['history']
         conversation.metadata = data['metadata']
         conversation.last_modified = datetime.strptime(data['last_modified'], '%Y%m%d%H%M%S')
+        conversation.creation_date = datetime.strptime(data['creation_date'], '%Y%m%d%H%M%S')
         return conversation

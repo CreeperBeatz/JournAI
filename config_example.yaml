@@ -4,7 +4,6 @@ cookie:
   name: some_name
 credentials:
   usernames:
-    example: {}
     admin:
       email: admin@gmail.com
       name: Admin

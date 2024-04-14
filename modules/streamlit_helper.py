@@ -7,6 +7,7 @@ from streamlit.source_util import _on_pages_changed, get_pages
 from streamlit_extras.switch_page_button import switch_page
 
 from modules.config import config
+from modules.vector_storage import VectorDBStorage
 
 DEFAULT_PAGE = "app.py"
 
@@ -108,3 +109,21 @@ def authenticate() -> str:
             st.error(e)
         st.stop()
     return username, name
+
+def set_session_state_defaults():
+    """
+    Set `conversation_id` and `conversation` to None, `embeddings_db` to VectorDBStorage(),
+    and `conversation_changed` to False
+    """
+    # Default values for session state initialization
+    defaults = {
+        "conversation_id": None,
+        "embeddings_db": VectorDBStorage(),
+        "conversation_changed": False,
+        "current_conversation": None
+    }
+
+    # Initialize session state with defaults if not already set
+    for key, default in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = default

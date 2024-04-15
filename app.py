@@ -76,7 +76,7 @@ if user_prompt is not None:
     with st.chat_message("user"):
         st.write(user_prompt)
 
-# If user hasn't set up their daily questions, add a button for understanding the bot
+# Add buttons explaining the app
 if len(st.session_state.conversation.history) < 2:
     if question_manager.get_questions(username):
         if st.button("Fill in my daily questions", use_container_width=True):
@@ -87,17 +87,19 @@ if len(st.session_state.conversation.history) < 2:
         if st.button("Learn about JournAI", use_container_width=True, type="primary"):
             st.session_state.conversation.add_system_message(
                 "The user is currently chatting with the assistant through an app with the following"
-                "layout:\n On the left, there is a side bar with a history of the previous conversations"
-                "the user had, as well as a button for starting a new conversation "
+                "layout:\n On the top left, there is a little button that opens the Sidebar menu. On "
+                "it, the history of the previous conversations"
+                "the user had is visualized, as well as a button for starting a new conversation "
                 "(➕ New Conversation). The menu has 2 items: Home, where the conversations are located,"
-                " and User Settings, where user credentials can be changed. "
+                " and User Settings, where user credentials can be changed."
                 "In a new paragraph, you should also tell the user "
                 "about what the goals of daily journaling can be. Since it's your first conversation "
                 "with the user, explain everything in detail. Use a warm tone that you would expect "
                 "from a psychologist and use markdown where needed."
             )
             st.session_state.conversation.add_human_message(
-                "What is the layout of the app? How can I use this app to daily journal? What are your capabilities in that sense?"
+                "What is the layout of the app? How can I use this app to daily journal? What are your "
+                "capabilities in that sense?"
             )
             RERUN_AT_END = True
 
@@ -109,6 +111,7 @@ if st.session_state.conversation.history[-1].get("function_call"):
         with st.spinner("Loading..."):
             try:
                 arguments = json.loads(st.session_state.conversation.history[-1]["function_call"]["arguments"])
+                RERUN_AT_END = True
                 match st.session_state.conversation.history[-1]["function_call"]["name"]:
                     case "get_questions":
                         questions = question_manager.get_questions(username)
@@ -117,15 +120,17 @@ if st.session_state.conversation.history[-1].get("function_call"):
                             name="get_questions",
                             content=str(questions)
                         )
-                        RERUN_AT_END = True
                     case "save_questions":
                         # region save questions
                         questions_list = arguments["questions"]
 
                         multiline_questions = '\n * '.join(questions_list)
-                        confirmation_message = f"Do you want to save these as your daily questions?\n * {multiline_questions}"
+                        confirmation_message = (f"Do you want to save these as your daily questions? \n\n"
+                                                f"<sub>(Due to a bug, you have to click the button "
+                                                f"twice)</sub>\n"
+                                                f"* {multiline_questions}")
 
-                        st.write(confirmation_message)
+                        st.markdown(confirmation_message, unsafe_allow_html=True)
                         col1, col2, _ = st.columns([1, 1, 5])
                         with col1:
                             if st.button("Yes", type="primary", use_container_width=True):
@@ -135,7 +140,7 @@ if st.session_state.conversation.history[-1].get("function_call"):
                                     content="Saved successfully!"
                                 )
                         with col2:
-                            if st.button("No", use_container_width=False):
+                            if st.button("No", use_container_width=True):
                                 st.session_state.conversation.add_function_response(
                                     name="save_questions",
                                     content="Questions not saved: User rejected."
@@ -149,30 +154,19 @@ if st.session_state.conversation.history[-1].get("function_call"):
                         st.write(answers)
                         RERUN_AT_END = True
                     case "save_answer":
-                        print(arguments)
-                        question = arguments["question"]
-                        answer = arguments["answer"]
-                        if question not in question_manager.get_questions(username):
-                            raise ValueError("Question isn't a daily question of the user!")
-
-                        confirmation_message = (f"Do you want to save this as an answer for your daily question?\n"
-                                                f" * **Question**: {question}\n"
-                                                f" * **Answer**: {answer}")
-                        st.write(confirmation_message)
-                        col1, col2, _ = st.columns([1, 1, 5])
-                        with col1:
-                            if st.button("Yes", type="primary", use_container_width=True):
-                                answer_manager.save_answer(username, question, answer)
-                                st.session_state.conversation.add_function_response(
-                                    name="save_answer",
-                                    content="Saved successfully!"
-                                )
-                        with col2:
-                            if st.button("No", use_container_width=False):
-                                st.session_state.conversation.add_function_response(
-                                    name="save_answer",
-                                    content="Questions not saved: User rejected."
-                                )
+                        try:
+                            question = arguments["question"]
+                            answer = arguments["answer"]
+                            answer_manager.save_answer(username, question, answer)
+                            st.session_state.conversation.add_function_response(
+                                name="save_answer",
+                                content="Saved successfully!"
+                            )
+                        except ValueError as e:
+                            st.session_state.conversation.add_function_response(
+                                name="save_answer",
+                                content=str(e)
+                            )
                     case _:
                         st.error("Critical Error: function not recognized")
             except ValueError as e:
@@ -208,6 +202,9 @@ if last_role != "assistant" and len(st.session_state.conversation.history) > 1:
             if ai_response.content:
                 st.write(ai_response.content)
 
+if RERUN_AT_END:
+    st.rerun()
+
 # Get title for conversation
 if st.session_state.conversation.title == "New Conversation" and len(
         st.session_state.conversation.history) > 1:
@@ -234,5 +231,4 @@ if st.session_state.conversation.new_messages:
 st.sidebar.divider()
 sthelper.show_sidebar_logout_button()
 
-if RERUN_AT_END:
-    st.rerun()
+

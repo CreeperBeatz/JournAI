@@ -85,9 +85,21 @@ if len(st.session_state.conversation.history) < 2:
             )
     else:
         if st.button("Learn about JournAI", use_container_width=True, type="primary"):
-            st.session_state.conversation.add_human_message(
-                "How can I use this app to daily journal? What are your capabilities in that sense?"
+            st.session_state.conversation.add_system_message(
+                "The user is currently chatting with the assistant through an app with the following"
+                "layout:\n On the left, there is a side bar with a history of the previous conversations"
+                "the user had, as well as a button for starting a new conversation "
+                "(➕ New Conversation). The menu has 2 items: Home, where the conversations are located,"
+                " and User Settings, where user credentials can be changed. "
+                "In a new paragraph, you should also tell the user "
+                "about what the goals of daily journaling can be. Since it's your first conversation "
+                "with the user, explain everything in detail. Use a warm tone that you would expect "
+                "from a psychologist and use markdown where needed."
             )
+            st.session_state.conversation.add_human_message(
+                "What is the layout of the app? How can I use this app to daily journal? What are your capabilities in that sense?"
+            )
+            RERUN_AT_END = True
 
 last_role = st.session_state.conversation.history[-1]["role"]
 

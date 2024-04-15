@@ -101,7 +101,7 @@ def authenticate() -> str:
     elif authentication_status is None:
         show_only_first_page()
         try:
-            if authenticator.register_user(pre_authorization=False):
+            if authenticator.register_user(pre_authorization=False)[0]:
                 st.success('User registered successfully. You can log in now.')
             with open('config.yaml', 'w') as file:
                 yaml.dump(config, file, default_flow_style=False)

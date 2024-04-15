@@ -96,6 +96,10 @@ if len(st.session_state.conversation.history) < 2:
                 "about what the goals of daily journaling can be. Since it's your first conversation "
                 "with the user, explain everything in detail. Use a warm tone that you would expect "
                 "from a psychologist and use markdown where needed."
+                "In a new paragraph, tell the user that the biggest strength of this application is that"
+                "it can provide insights based on your daily answers in new conversations. "
+                "The user can ask the bot in the"
+                "end of the week for insights about their answers, repeating patterns or progress."
             )
             st.session_state.conversation.add_human_message(
                 "What is the layout of the app? How can I use this app to daily journal? What are your "
@@ -111,7 +115,6 @@ if st.session_state.conversation.history[-1].get("function_call"):
         with st.spinner("Loading..."):
             try:
                 arguments = json.loads(st.session_state.conversation.history[-1]["function_call"]["arguments"])
-                RERUN_AT_END = True
                 match st.session_state.conversation.history[-1]["function_call"]["name"]:
                     case "get_questions":
                         questions = question_manager.get_questions(username)
@@ -120,6 +123,7 @@ if st.session_state.conversation.history[-1].get("function_call"):
                             name="get_questions",
                             content=str(questions)
                         )
+                        RERUN_AT_END = True
                     case "save_questions":
                         # region save questions
                         questions_list = arguments["questions"]
@@ -167,6 +171,7 @@ if st.session_state.conversation.history[-1].get("function_call"):
                                 name="save_answer",
                                 content=str(e)
                             )
+                        RERUN_AT_END = True
                     case _:
                         st.error("Critical Error: function not recognized")
             except ValueError as e:
@@ -178,14 +183,18 @@ if last_role == "user" and len(st.session_state.conversation.history) == 2:
     with st.spinner("Loading previous conversations..."):
         query_text = st.session_state.conversation.history[-1]["content"]
         query_embedding = st.session_state.chatbot.get_embedding(query_text)
-        context, _ = st.session_state.embeddings_db.search_similar(
-            username=username,
-            query_embedding=query_embedding
-        )
+        try:
+            context, _ = st.session_state.embeddings_db.search_similar(
+                username=username,
+                query_embedding=query_embedding
+            )
+        except RuntimeError as e:
+            logging.error("Couldnt retrieve embeddings!")
+            logging.error(e)
+            context = ""
         st.session_state.conversation.add_system_message(
             context_as_system_message(context)
         )
-        RERUN_AT_END = True
 
 # AI assistant turn (After RAG)
 if last_role != "assistant" and len(st.session_state.conversation.history) > 1:
@@ -202,15 +211,11 @@ if last_role != "assistant" and len(st.session_state.conversation.history) > 1:
             if ai_response.content:
                 st.write(ai_response.content)
 
-if RERUN_AT_END:
-    st.rerun()
-
 # Get title for conversation
 if st.session_state.conversation.title == "New Conversation" and len(
         st.session_state.conversation.history) > 1:
     title = st.session_state.chatbot.get_title(st.session_state.conversation)
     st.session_state.conversation.title = title
-
 
 # Save the conversation
 if st.session_state.conversation.new_messages:
@@ -226,9 +231,11 @@ if st.session_state.conversation.new_messages:
             embedding=vector,
             date=st.session_state.conversation.creation_date
         )
-        print(f"Current Conversation UUID: {st.session_state.conversation.id}")
-        print("Successful save")
+        logging.info(f"Current Conversation UUID: {st.session_state.conversation.id}")
+        logging.info("Successful save")
+
 st.sidebar.divider()
 sthelper.show_sidebar_logout_button()
 
-
+if RERUN_AT_END:
+    st.rerun()

@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from typing import List
 import openai
 from openai.types.chat import ChatCompletionMessage
 from modules.question_manager import save_questions_description, get_questions_description
@@ -57,7 +56,9 @@ class ChatBot:
             model=CHAT_MODEL,
             messages=[{"role": "user",
                        "content": f"Provide a summary for this "
-                                  f"conversation:\n\n{conversation.to_text()}"}],
+                                  f"conversation. Be concise and include "
+                                  f"any new information the user has said "
+                                  f"about themselves:\n\n{conversation.to_text()}"}],
             max_tokens=max_tokens,
         )
 

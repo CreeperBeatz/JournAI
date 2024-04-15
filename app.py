@@ -1,8 +1,6 @@
 import json
 import streamlit as st
 from modules.utilities import context_as_system_message
-from modules.vector_storage import VectorDBStorage
-
 from modules.config import PAGE_CONFIG
 import logging
 import modules.streamlit_helper as sthelper
@@ -21,8 +19,7 @@ sthelper.setup_pages()
 RERUN_AT_END = False
 
 # Page content
-st.title("JournAI")
-st.markdown("Welcome to JournAI!\n\n")
+st.title("JournAI Chat")
 
 # Initialize session state variables
 sthelper.set_session_state_defaults()
@@ -67,7 +64,7 @@ for turn in st.session_state.conversation.history:
     role = turn["role"]
     if role not in ["system"]:
         with st.chat_message(turn["role"]):
-            # FIXME visualization of messages with no content
+            # Visualization of messages with no content
             if turn.get("content"):
                 st.write(turn["content"])
             else:
@@ -78,6 +75,19 @@ if user_prompt is not None:
     st.session_state.conversation.add_human_message(user_prompt)
     with st.chat_message("user"):
         st.write(user_prompt)
+
+# If user hasn't set up their daily questions, add a button for understanding the bot
+if len(st.session_state.conversation.history) < 2:
+    if question_manager.get_questions(username):
+        if st.button("Fill in my daily questions", use_container_width=True):
+            st.session_state.conversation.add_human_message(
+                "Can we go over my daily questions one by one and answer them?"
+            )
+    else:
+        if st.button("Learn about JournAI", use_container_width=True, type="primary"):
+            st.session_state.conversation.add_human_message(
+                "How can I use this app to daily journal? What are your capabilities in that sense?"
+            )
 
 last_role = st.session_state.conversation.history[-1]["role"]
 

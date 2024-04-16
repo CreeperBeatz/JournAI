@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 from typing import Dict, List
 
+from modules.config import ANSWERS_FOLDER
+
 save_answer_description = {
     "name": "save_answer",
     "description": "Save daily answer to a question",
@@ -41,7 +43,7 @@ def save_answer(username: str, question: str, answer: str):
         None
     """
     # Define the directory and file name for today's date
-    dir_path = f"./answers/{username}"
+    dir_path = f"{ANSWERS_FOLDER}/{username}"
     os.makedirs(dir_path, exist_ok=True)  # Ensure the directory exists
     today_date = datetime.now().strftime("%Y-%m-%d")
     file_path = os.path.join(dir_path, f"{today_date}.json")
@@ -105,7 +107,7 @@ def get_answers(username: str, from_date: str, to_date: str) -> Dict[str, Dict[s
         ValueError: Dates are not in the correct format
     """
     answers = {}
-    dir_path = f"./answers/{username}"
+    dir_path = f"{ANSWERS_FOLDER}/{username}"
 
     # Convert strings to datetime objects for comparison
     start_date = datetime.strptime(from_date, "%Y-%m-%d")
@@ -138,7 +140,7 @@ def daily_questions_answered(username: str) -> List[str]:
         List[str]: A list of all the questions the user has answered for the day
     """
     # Define the directory and file name for today's date
-    dir_path = f"./answers/{username}"
+    dir_path = f"{ANSWERS_FOLDER}/{username}"
     today_date = datetime.now().strftime("%Y-%m-%d")
     file_path = os.path.join(dir_path, f"{today_date}.json")
 

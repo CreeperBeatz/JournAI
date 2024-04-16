@@ -91,7 +91,7 @@ def authenticate() -> str:
         name, authentication_status, username = authenticator.login("main")
     except KeyError as e:
         # Error in the library, log out the user
-        authenticator.logout()
+        st.error("Error in authentication cookies. Please delete your cookies for the site.")
         st.stop()
 
     if authentication_status is False:

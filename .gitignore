@@ -4,8 +4,6 @@
 /modules/__pycache__
 /logs
 *.log
-/data-samples-text
-/data_extraction_scripts/__pycache__
 /models/__pycache__
 /notebooks/logs
 problem*.py
@@ -15,3 +13,4 @@ dist
 __pycache__
 /.debenv/
 persistent_storage/*
+config.yaml
